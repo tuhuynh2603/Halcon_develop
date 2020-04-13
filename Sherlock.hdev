@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="13.0.2.2">
+<procedure name="main">
+<interface/>
+<body>
+<l>dev_clear_window ()</l>
+<l>dev_open_file_dialog ('read_image', 'dir', 'default', Selection1)</l>
+<l>list_image_files (Selection1, ['ima', 'bmp', 'jpg', 'png', 'tiff', 'tif', 'gif', 'jpeg', 'pcx', 'pgm', 'ppm', 'pbm', 'xwd', 'pnm'], [], ImageFiles)</l>
+<l>tuple_length (ImageFiles, Length)</l>
+<l>    read_image (Image_first, ImageFiles[128])</l>
+<l>    gen_rectangle1 (ROI_rectangle_line, 423.847, 289.397, 586.784, 464.322)</l>
+<l>    gen_rectangle1 (ROI_rectangle_circle, 696.081,850.392, 1370.3, 1470.92)</l>
+<l>    gen_rectangle1 (ROI_rectangle_sliver, 408.224, 666.302, 2038.5, 795.924)</l>
+<l>    reduce_domain (Image_first, ROI_rectangle_sliver, ImageReduced_silver_first)</l>
+<c>    </c>
+<l>    emphasize (ImageReduced_silver_first, ImageEmphasize_silver_first, 7, 7, 1)</l>
+<l>    Device_locationn (ROI_rectangle_line, ROI_rectangle_circle, Region_first, ImageFiles[128], Angle_first, Row_first, Column_first)</l>
+<c>    </c>
+<c></c>
+<c></c>
+<l>for i := 128 to Length -1 by 1</l>
+<l>    read_image (Image, ImageFiles[i])</l>
+<l>    try</l>
+<l>        Device_locationn (ROI_rectangle_line, ROI_rectangle_circle, RegionBorder_current, ImageFiles[i], Angle_current, Row_current, Column_current)</l>
+<l>    shift_angle := Angle_current - Angle_first</l>
+<l>    shift_row := Row_current -Row_first</l>
+<l>    shift_column := Column_current - Column_first</l>
+<c>      </c>
+<c>    *sliver inspect</c>
+<l>    hom_mat2d_identity (HomMat2DIdentity2)</l>
+<l>     area_center (ROI_rectangle_sliver, Area, Row, Column)</l>
+<l>    hom_mat2d_rotate (HomMat2DIdentity2,shift_angle, Row, Column, HomMat2DRotate)</l>
+<l>    hom_mat2d_translate (HomMat2DRotate,shift_row, shift_column, HomMat2DTranslate) </l>
+<l>    affine_trans_region (ROI_rectangle_sliver, RegionAffineTrans, HomMat2DTranslate, 'nearest_neighbor')</l>
+<l>    boundary (RegionAffineTrans, RegionBorderRect_sliver, 'inner')</l>
+<c>    </c>
+<l>    reduce_domain (Image, RegionAffineTrans, ImageReduced_sliver) </l>
+<l>    emphasize (ImageReduced_sliver, ImageEmphasize, 7, 7, 2)</l>
+<c>   </c>
+<l>     hysteresis_threshold (ImageEmphasize, RegionHysteresis, 50, 90,3)</l>
+<l>     difference (ImageEmphasize_silver_first, ImageEmphasize, RegionDifference_sliver)</l>
+<l>     select_shape (RegionDifference_sliver, SelectedRegions, 'height', 'and', 550, 99999)     </l>
+<c>     </c>
+<l>     hom_mat2d_invert (HomMat2DTranslate, HomMat2DInvert)</l>
+<l>     affine_trans_image (ImageEmphasize, ImageAffineTrans_invert, HomMat2DInvert, 'constant', 'false')</l>
+<c>     </c>
+<c>     </c>
+<l>     abs_diff_image (ImageAffineTrans_invert, ImageEmphasize_silver_first, ImageAbsDiff1, 1)</l>
+<c></c>
+<l>*      select_shape_xld (Lines, SelectedXLD, 'area', 'and', 150, 99999)</l>
+<l>*     select_matching_lines (RegionOpening, RegionLines, Angle_current, HomMat2DTranslate, 7, 100, AngleOut, DistOut)</l>
+<l>*    union_cotangential_contours_xld (SelectedXLD, UnionContours, 0, 30, Angle_current, 25, 10, 2, 'attr_forget')</l>
+<l>     dev_clear_window ()</l>
+<l>     dev_display (ImageAbsDiff1)</l>
+<l>*      dev_display (RegionOpening)</l>
+<l>    stop()</l>
+<c>    *</c>
+<c>    </c>
+<c>    *circle inspect</c>
+<c>    </c>
+<l>    hom_mat2d_identity (HomMat2DIdentity0)</l>
+<l>    hom_mat2d_rotate (HomMat2DIdentity0,shift_angle, Row_first, Column_first, HomMat2DRotate)</l>
+<l>    hom_mat2d_translate (HomMat2DRotate,shift_row, shift_column, HomMat2DTranslate) </l>
+<l>    affine_trans_region (Region_first, RegionTrans_circle_first, HomMat2DTranslate, 'nearest_neighbor')</l>
+<l>    boundary (RegionTrans_circle_first, RegionBorder_circle_first, 'inner')</l>
+<l>    reduce_domain (Image, RegionTrans_circle_first, ImageReduced_current)</l>
+<c>    </c>
+<c>    </c>
+<c></c>
+<c>    </c>
+<l>     dev_clear_window ()</l>
+<l>    dev_display (Image)</l>
+<l>    dev_set_color ('red')</l>
+<l>    dev_display (RegionBorder_circle_first)</l>
+<l>      dev_display (RegionBorderRect_sliver)  </l>
+<l>*     dev_set_color ('green')</l>
+<l>*     dev_display (ImageReduced_current)</l>
+<c></c>
+<c></c>
+<l>    catch (Exception)</l>
+<l>    endtry</l>
+<c>   * 1033</c>
+<c>    *1160.5</c>
+<c></c>
+<c></c>
+<l>endfor</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+<procedure name="Device_location">
+<interface>
+<io>
+<par name="ROI_1" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="ROI_2" base_type="iconic" dimension="0"/>
+<par name="ImageReduced_line" base_type="iconic" dimension="0"/>
+<par name="Region" base_type="iconic" dimension="0"/>
+<par name="ConnectedRegions1" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions" base_type="iconic" dimension="0"/>
+<par name="RegionTrans1" base_type="iconic" dimension="0"/>
+<par name="RegionUnion" base_type="iconic" dimension="0"/>
+<par name="ImageReduced_Circle" base_type="iconic" dimension="0"/>
+<par name="Region1" base_type="iconic" dimension="0"/>
+<par name="ConnectedRegions" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions1" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions2" base_type="iconic" dimension="0"/>
+<par name="RegionFillUp" base_type="iconic" dimension="0"/>
+<par name="RegionTrans" base_type="iconic" dimension="0"/>
+</oo>
+<ic>
+<par name="ImageFiles" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="Rows" base_type="ctrl" dimension="0"/>
+<par name="Columns" base_type="ctrl" dimension="0"/>
+<par name="Angle_first" base_type="ctrl" dimension="0"/>
+<par name="AbsoluteHisto" base_type="ctrl" dimension="0"/>
+<par name="RelativeHisto" base_type="ctrl" dimension="0"/>
+<par name="MinThresh" base_type="ctrl" dimension="0"/>
+<par name="MaxThresh" base_type="ctrl" dimension="0"/>
+<par name="Area" base_type="ctrl" dimension="0"/>
+<par name="Row_first" base_type="ctrl" dimension="0"/>
+<par name="Column_first" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<l>    read_image (Image, ImageFiles[128])</l>
+<c>    *</c>
+<l>    gen_rectangle1 (ROI_0, 423.847, 289.397, 586.784, 564.322)</l>
+<l>    gen_rectangle1 (ROI_1, 696.081,850.392, 1370.3, 1470.92)</l>
+<l>    gen_rectangle1 (ROI_2, 15.5804, 812.615, 519.102, 1419.94)</l>
+<l>    reduce_domain (Image, ROI_0, ImageReduced_line)</l>
+<l>    threshold (ImageReduced_line, Region, 0, 70)</l>
+<l>    connection (Region, ConnectedRegions1)</l>
+<l>    select_shape (ConnectedRegions1, SelectedRegions, 'area', 'and', 1500, 999999)</l>
+<l>    shape_trans (SelectedRegions, RegionTrans1, 'rectangle2')</l>
+<l>    get_region_convex (RegionTrans1, Rows, Columns)</l>
+<l>    angle_lx (Rows[3], Columns[3], Rows[0], Columns[0], Angle_first)</l>
+<c>    </c>
+<l>    gen_rectangle1 (ROI_1, 696.081,850.392, 1370.3, 1470.92)</l>
+<l>    gen_rectangle1 (ROI_2, 15.5804, 812.615, 519.102, 1419.94)</l>
+<l>    union2 (ROI_1, ROI_2, RegionUnion)</l>
+<c>    </c>
+<l>    reduce_domain (Image, RegionUnion, ImageReduced_Circle)</l>
+<l>    gray_histo (RegionUnion, ImageReduced_Circle, AbsoluteHisto, RelativeHisto)</l>
+<l>    histo_to_thresh (AbsoluteHisto, 2, MinThresh, MaxThresh)</l>
+<c>    </c>
+<l>    threshold (ImageReduced_Circle, Region1, MinThresh[0], MaxThresh[0])</l>
+<l>    connection (Region1, ConnectedRegions)</l>
+<l>    select_shape (ConnectedRegions, SelectedRegions1, 'area', 'and',500, 500000)   </l>
+<l>    select_shape (SelectedRegions1, SelectedRegions2, 'roundness', 'and', 0.7, 1)</l>
+<l>    fill_up (SelectedRegions2, RegionFillUp)</l>
+<l>    shape_trans (RegionFillUp, RegionTrans, 'outer_circle')</l>
+<l>    area_center (RegionTrans, Area, Row_first, Column_first)</l>
+<l>return ()</l>
+</body>
+<docu id="Device_location">
+<parameters>
+<parameter id="AbsoluteHisto"/>
+<parameter id="Angle_first"/>
+<parameter id="Area"/>
+<parameter id="Column_first"/>
+<parameter id="Columns"/>
+<parameter id="ConnectedRegions"/>
+<parameter id="ConnectedRegions1"/>
+<parameter id="ImageFiles"/>
+<parameter id="ImageReduced_Circle"/>
+<parameter id="ImageReduced_line"/>
+<parameter id="MaxThresh"/>
+<parameter id="MinThresh"/>
+<parameter id="ROI_1"/>
+<parameter id="ROI_2"/>
+<parameter id="Region"/>
+<parameter id="Region1"/>
+<parameter id="RegionFillUp"/>
+<parameter id="RegionTrans"/>
+<parameter id="RegionTrans1"/>
+<parameter id="RegionUnion"/>
+<parameter id="RelativeHisto"/>
+<parameter id="Row_first"/>
+<parameter id="Rows"/>
+<parameter id="SelectedRegions"/>
+<parameter id="SelectedRegions1"/>
+<parameter id="SelectedRegions2"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="Device_locationn">
+<interface>
+<io>
+<par name="ROI_0" base_type="iconic" dimension="0"/>
+<par name="ROI_1" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="RegionTrans" base_type="iconic" dimension="0"/>
+</oo>
+<ic>
+<par name="ImageFiles" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="Angle_first" base_type="ctrl" dimension="0"/>
+<par name="Row_first" base_type="ctrl" dimension="0"/>
+<par name="Column_first" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<l>    read_image (Image, ImageFiles)</l>
+<c>    *</c>
+<l>    reduce_domain (Image, ROI_0, ImageReduced_line)</l>
+<l>    threshold (ImageReduced_line, Region, 0, 70)</l>
+<l>    connection (Region, ConnectedRegions1)</l>
+<l>    select_shape (ConnectedRegions1, SelectedRegions, 'area', 'and', 3500, 999999)</l>
+<l>    shape_trans (SelectedRegions, RegionTrans1, 'rectangle2')</l>
+<l>    get_region_convex (RegionTrans1, Rows, Columns)</l>
+<l>    angle_lx (Rows[3], Columns[3], Rows[0], Columns[0], Angle_first)</l>
+<c>    </c>
+<l>reduce_domain (Image, ROI_1, ImageReduced_Circle)</l>
+<l>    gray_histo (ImageReduced_Circle, ImageReduced_Circle, AbsoluteHisto, RelativeHisto)</l>
+<l>    histo_to_thresh (AbsoluteHisto, 2, MinThresh, MaxThresh)</l>
+<c>    </c>
+<l>    threshold (ImageReduced_Circle, Region1, MinThresh[0], MaxThresh[0])</l>
+<l>    connection (Region1, ConnectedRegions)</l>
+<l>    select_shape (ConnectedRegions, SelectedRegions1, 'area', 'and',5000, 500000)   </l>
+<l>    select_shape (SelectedRegions1, SelectedRegions2, 'roundness', 'and', 0.7, 1)</l>
+<l>    fill_up (SelectedRegions2, RegionFillUp)</l>
+<l>    shape_trans (RegionFillUp, RegionTrans, 'outer_circle')</l>
+<l>* boundary (RegionTrans, RegionTrans, 'inner')</l>
+<l>    area_center (RegionTrans, Area, Row_first, Column_first)</l>
+<l>* dev_display (RegionTrans1)</l>
+<l>* dev_display (RegionTrans)</l>
+<c></c>
+<l>return ()</l>
+</body>
+<docu id="Device_locationn">
+<parameters>
+<parameter id="Angle_first"/>
+<parameter id="Column_first"/>
+<parameter id="ImageFiles"/>
+<parameter id="ROI_0"/>
+<parameter id="ROI_1"/>
+<parameter id="RegionTrans"/>
+<parameter id="Row_first"/>
+</parameters>
+</docu>
+</procedure>
+</hdevelop>
