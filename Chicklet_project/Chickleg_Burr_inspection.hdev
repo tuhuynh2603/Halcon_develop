@@ -7,82 +7,143 @@
 <l>dev_open_file_dialog ('read_image', 'dir', 'default', Selection1)</l>
 <l>list_image_files (Selection1, ['ima', 'bmp', 'jpg', 'png', 'tiff', 'tif', 'gif', 'jpeg', 'pcx', 'pgm', 'ppm', 'pbm', 'xwd', 'pnm'], [], ImageFiles)</l>
 <l>tuple_length (ImageFiles, Length)</l>
+<c>   ** first for First device location  </c>
 <l>    read_image (Image_first, ImageFiles[128])</l>
 <l>    gen_rectangle1 (ROI_rectangle_line, 423.847, 289.397, 586.784, 464.322)</l>
-<l>    gen_rectangle1 (ROI_rectangle_circle, 696.081,850.392, 1370.3, 1470.92)</l>
-<l>    gen_rectangle1 (ROI_rectangle_sliver, 408.224, 666.302, 2038.5, 795.924)</l>
-<l>    reduce_domain (Image_first, ROI_rectangle_sliver, ImageReduced_silver_first)</l>
-<c>    </c>
-<l>    emphasize (ImageReduced_silver_first, ImageEmphasize_silver_first, 7, 7, 1)</l>
-<l>    Device_locationn (ROI_rectangle_line, ROI_rectangle_circle, Region_first, ImageFiles[128], Angle_first, Row_first, Column_first)</l>
-<c>    </c>
+<l>    gen_rectangle1 (ROI_rectangle_circle, 696.081,850.392, 1370.3, 1470.92)     </l>
+<l>    Device_locationn (ROI_rectangle_line, ROI_rectangle_circle, Region_first, RegionFillUp_first, ImageFiles[128], Angle_first, Row_first, Column_first, Radius_first)</l>
 <c></c>
+<c>       </c>
+<l>    gen_rectangle1 (ROI_rectangle_sliver, 5.6, 676.164,2048, 772.875)     </l>
+<l>    gen_rectangle1 (ROI_rectangle_sliver_croptop, 276.509, 681.106, 342.406, 770.26)</l>
+<l>    gen_rectangle1 (ROI_rectangle_sliver_cropbot, 1833.39, 632.945, 1971.94, 879.04)</l>
+<c></c>
+<l>    gen_rectangle1 (ROI_rectangle_circle2, 13.7639, 750.993, 539.675, 1405.06)</l>
+<l>    gen_rectangle1 (ROI_rectangle_circle_mini, 1121.76, 1773.96, 1379.43, 2040.06)</l>
+<c></c>
+<c></c>
+<c>    **</c>
+<c>    **</c>
+<c>    ** Tracing </c>
+<c>    </c>
 <c></c>
 <l>for i := 128 to Length -1 by 1</l>
 <l>    read_image (Image, ImageFiles[i])</l>
-<l>    try</l>
-<l>        Device_locationn (ROI_rectangle_line, ROI_rectangle_circle, RegionBorder_current, ImageFiles[i], Angle_current, Row_current, Column_current)</l>
+<c></c>
+<l>*     try</l>
+<l>    Device_locationn (ROI_rectangle_line, ROI_rectangle_circle, RegionBorder_current, RegionCircle_fillup_current, ImageFiles[i], Angle_current, Row_current, Column_current, Radius_current)</l>
 <l>    shift_angle := Angle_current - Angle_first</l>
 <l>    shift_row := Row_current -Row_first</l>
 <l>    shift_column := Column_current - Column_first</l>
-<c>      </c>
+<l>      dev_set_line_width (1)</l>
 <c>    *sliver inspect</c>
-<l>    hom_mat2d_identity (HomMat2DIdentity2)</l>
-<l>     area_center (ROI_rectangle_sliver, Area, Row, Column)</l>
-<l>    hom_mat2d_rotate (HomMat2DIdentity2,shift_angle, Row, Column, HomMat2DRotate)</l>
-<l>    hom_mat2d_translate (HomMat2DRotate,shift_row, shift_column, HomMat2DTranslate) </l>
-<l>    affine_trans_region (ROI_rectangle_sliver, RegionAffineTrans, HomMat2DTranslate, 'nearest_neighbor')</l>
-<l>    boundary (RegionAffineTrans, RegionBorderRect_sliver, 'inner')</l>
-<c>    </c>
-<l>    reduce_domain (Image, RegionAffineTrans, ImageReduced_sliver) </l>
-<l>    emphasize (ImageReduced_sliver, ImageEmphasize, 7, 7, 2)</l>
 <c>   </c>
-<l>     hysteresis_threshold (ImageEmphasize, RegionHysteresis, 50, 90,3)</l>
-<l>     difference (ImageEmphasize_silver_first, ImageEmphasize, RegionDifference_sliver)</l>
-<l>     select_shape (RegionDifference_sliver, SelectedRegions, 'height', 'and', 550, 99999)     </l>
-<c>     </c>
-<l>     hom_mat2d_invert (HomMat2DTranslate, HomMat2DInvert)</l>
-<l>     affine_trans_image (ImageEmphasize, ImageAffineTrans_invert, HomMat2DInvert, 'constant', 'false')</l>
-<c>     </c>
-<c>     </c>
-<l>     abs_diff_image (ImageAffineTrans_invert, ImageEmphasize_silver_first, ImageAbsDiff1, 1)</l>
+<l>    Homo_trans (ROI_rectangle_sliver, Image, ImageReduced_sliver, RegionAffineTrans, shift_angle, shift_row, shift_column)</l>
+<c>   </c>
 <c></c>
-<l>*      select_shape_xld (Lines, SelectedXLD, 'area', 'and', 150, 99999)</l>
-<l>*     select_matching_lines (RegionOpening, RegionLines, Angle_current, HomMat2DTranslate, 7, 100, AngleOut, DistOut)</l>
-<l>*    union_cotangential_contours_xld (SelectedXLD, UnionContours, 0, 30, Angle_current, 25, 10, 2, 'attr_forget')</l>
+<l>    gray_histo (RegionAffineTrans, ImageReduced_sliver, AbsoluteHisto, RelativeHisto)</l>
+<l>    histo_to_thresh (AbsoluteHisto, 2, MinThresh, MaxThresh)</l>
+<c>    </c>
+<l>    dev_clear_window ()</l>
+<l>    mul := 255/(255- MaxThresh[0])</l>
+<l>    add := -MaxThresh[0]*mul</l>
+<c>    </c>
+<c>     *remove black</c>
+<l>    scale_image (ImageReduced_sliver, ImageScaled, mul,add)</l>
+<l>    threshold (ImageScaled, Region_black, 41, 255)</l>
+<l>    opening_circle (Region_black, RegionOpening1, 5)</l>
+<l>    opening_rectangle1 (RegionOpening1, RegionOpening, 3, 50)</l>
+<l>    connection (RegionOpening, ConnectedRegions)</l>
+<l>    select_shape (ConnectedRegions, SelectedRegions, 'area', 'and', 3500, 9999999)</l>
+<l>    union1 (SelectedRegions, RegionUnion_black)</l>
+<l>    dev_clear_window ()</l>
+<l>    boundary (RegionUnion_black, RegionBorder, 'inner')</l>
+<l>    reduce_domain (ImageReduced_sliver, RegionUnion_black, ImageReduced_black)</l>
+<l>    lines_gauss (ImageReduced_black, Lines1, 1.5, 3, 8, 'light', 'true', 'bar-shaped', 'true')</l>
+<c>    *Remve White</c>
+<l>*     mean_image (ImageReduced_black, ImageMean1, 1, 15)</l>
+<c></c>
+<l>     threshold (ImageReduced_black, Region_white, 200, 255)</l>
+<l>     threshold_sub_pix (ImageReduced_black, Border, 120)</l>
+<l>     edges_sub_pix (ImageReduced_black, Edges1, 'canny', 1, 20, 40)</l>
+<l>     dilation_rectangle1 (Region_white, RegionDilation, 5, 1)</l>
+<l>     difference (RegionUnion_black, RegionDilation, RegionDifference)</l>
+<c>   </c>
+<l>     reduce_domain (Image, RegionDifference, ImageReduced_whiteblack)</l>
+<c></c>
+<l>     lines_gauss (ImageReduced_whiteblack, Lines2, 1.5, 3, 8, 'light', 'true', 'bar-shaped', 'true')</l>
 <l>     dev_clear_window ()</l>
-<l>     dev_display (ImageAbsDiff1)</l>
-<l>*      dev_display (RegionOpening)</l>
-<l>    stop()</l>
-<c>    *</c>
+<l>     dev_display (Image)</l>
+<c></c>
+<c>   </c>
+<l>     dev_display (RegionBorder)</l>
+<l>     stop()</l>
+<l>     dev_clear_window ()</l>
+<l>     hysteresis_threshold (ImageReduced_sliver, RegionHysteresis, 78, 90,35)</l>
+<l>     difference (RegionAffineTrans, RegionHysteresis, RegionDifference_sliver)</l>
+<l>     gen_rectangle2 (Rectangle, Row_current, Column_current, -shift_angle, 1,20)</l>
+<l>     opening (RegionDifference_sliver, Rectangle, RegionOpening)</l>
+<l>     gen_rectangle2 (Rectangle2, Row_current, Column_current, -shift_angle, 5, 1)</l>
+<l>     closing (RegionOpening, Rectangle2, RegionClosing)</l>
+<l>     connection (RegionClosing, ConnectedRegions1)</l>
+<l>     select_shape (ConnectedRegions1, SelectedRegions_closing, 'height', 'and', 500, 99999)</l>
+<l>     count_obj (SelectedRegions_closing, Number)</l>
+<l>     if (Number &gt;=1)</l>
+<l>        union1 (SelectedRegions_closing, RegionUnion_closing)</l>
+<l>        shape_trans (RegionUnion_closing, RegionTrans2, 'convex')</l>
+<l>        shape_trans (RegionTrans2, RegionTrans_rec, 'rectangle2')</l>
+<l>        get_region_polygon (RegionTrans_rec, 5, Rowsg, Columnsg)</l>
+<l>        intersection_lines (Rowsg[0], Columnsg[0], Rowsg[1], Columnsg[1], 0, 0, 0, 2048, Row1, Column1, IsOverlapping)</l>
+<l>*         gen_circle (Circle, Row1, Column1, 10)</l>
+<l>        intersection_lines (Rowsg[2], Columnsg[2], Rowsg[3], Columnsg[3], 0, 0, 0, 2048, Row2, Column2, IsOverlapping)</l>
+<c>        </c>
+<l>        intersection_lines (Rowsg[0], Columnsg[0], Rowsg[1], Columnsg[1], 2048, 0, 2048, 2048, Row3, Column3, IsOverlapping)</l>
+<l>        intersection_lines (Rowsg[2], Columnsg[2], Rowsg[3], Columnsg[3], 2048, 0, 2048, 2048, Row4, Column4, IsOverlapping)</l>
+<c>        </c>
+<l>        Rowss := [Row1,Row2,Row4,Row3,Row1]</l>
+<l>        Colss :=  [Column1, Column2, Column4, Column3,Column1]</l>
+<l>        gen_contour_polygon_xld (Contour_recpo, Rowss, Colss)</l>
+<l>        gen_region_contour_xld (Contour_recpo, Region_recpolygon, 'filled')</l>
+<l>        reduce_domain (Image, Region_recpolygon, ImageReduced_polygon)</l>
+<c>        </c>
+<c>        * Remove top </c>
+<l>        if(1)</l>
+<l>            Homo_trans (ROI_rectangle_sliver_croptop, ImageReduced_polygon, ImageReduced_sliver_crop, RegionAffineTrans, shift_angle, shift_row, shift_column)</l>
+<l>            threshold (ImageReduced_sliver_crop, ThreshRegion_poly_crop, 170, 255)</l>
+<l>            difference (Region_recpolygon, ThreshRegion_poly_crop, RegionDifference2)</l>
+<l>            connection (RegionDifference2, ConnectedRegions2)</l>
+<l>            select_shape (ConnectedRegions2, SelectedRegions1, 'height', 'and', 800, 99999)</l>
+<l>            union1 (SelectedRegions1, RegionUnion)</l>
+<l>            gen_rectangle2 (Rectangle_expand2, Row_current, Column_current, -shift_angle, 20, 1)</l>
+<l>            dilation1 (RegionUnion, Rectangle_expand2, RegionDilation1, 1)</l>
+<c>        </c>
+<l>        else</l>
+<l>            Homo_trans (ROI_rectangle_sliver_cropbot, ImageReduced_polygon, ImageReduced_sliver_crop, RegionAffineTrans, shift_angle, shift_row, shift_column)</l>
+<l>            threshold (ImageReduced_sliver_crop, ThreshRegion_poly_crop, 0, 30)</l>
+<l>            difference (Region_recpolygon, ThreshRegion_poly_crop, RegionDifference2)</l>
+<l>            connection (RegionDifference2, ConnectedRegions2)</l>
+<l>            select_shape (ConnectedRegions2, SelectedRegions1, 'height', 'and', 800, 99999)</l>
+<l>            union1 (SelectedRegions1, RegionUnion)</l>
+<l>        endif</l>
+<l>        dev_clear_window()</l>
+<l>        dev_display (Image)</l>
+<l>        dev_set_draw ('margin')</l>
+<l>        dev_display (RegionUnion)</l>
+<c>        * remove bottom</c>
+<l>     endif</l>
+<l>stop()</l>
 <c>    </c>
 <c>    *circle inspect</c>
-<c>    </c>
-<l>    hom_mat2d_identity (HomMat2DIdentity0)</l>
-<l>    hom_mat2d_rotate (HomMat2DIdentity0,shift_angle, Row_first, Column_first, HomMat2DRotate)</l>
-<l>    hom_mat2d_translate (HomMat2DRotate,shift_row, shift_column, HomMat2DTranslate) </l>
-<l>    affine_trans_region (Region_first, RegionTrans_circle_first, HomMat2DTranslate, 'nearest_neighbor')</l>
-<l>    boundary (RegionTrans_circle_first, RegionBorder_circle_first, 'inner')</l>
-<l>    reduce_domain (Image, RegionTrans_circle_first, ImageReduced_current)</l>
+<l>*         circle_inspect (ROI_rectangle_circle, Image, ROI_rectangle_circle_mini, ROI_rectangle_circle2, ImageReduced_Circle, RegionAffineTrans2, Region1, ConnectedRegions, SelectedRegions1, SelectedRegions2, RegionFillUp, Contours_bounday, Circle_first, Circle_offset_outer, Circle_offset_inner, Circle, Contours_fit_circle, RegionDifference, ImageReduced_Circle_mini, RegionAffineTrans3, Region1_mini, ConnectedRegions_mini, SelectedRegions1_mini, SelectedRegions2_mini, RegionFillUp_mini, Contours_bounday_mini, Circle_mini, SelectedRegions3, Contours_fit_circle_mini, RegionDifference_mini, ImageReduced_Circle2, RegionAffineTrans4, Region1_2, ConnectedRegions_2, SelectedRegions1_2, SelectedRegions2_2, RegionFillUp_2, Contours_bounday_2, Circle_2, SelectedRegions4, Contours_fit_circle_2, RegionDifference_2, shift_angle, shift_row, shift_column, Radius_first, AbsoluteHisto, RelativeHisto, MinThresh, MaxThresh, Features, Row_current, Column_current, Radius, StartPhi, EndPhi, PointOrder, AbsoluteHisto2, RelativeHisto2, Row_current_mini, Column_current_mini, Radius_mini, Exception1, Row_current_2, Column_current_2, Radius_2)</l>
+<c>            </c>
+<l>*     catch (Exception)</l>
+<l>*     endtry</l>
 <c>    </c>
 <c>    </c>
-<c></c>
 <c>    </c>
-<l>     dev_clear_window ()</l>
-<l>    dev_display (Image)</l>
-<l>    dev_set_color ('red')</l>
-<l>    dev_display (RegionBorder_circle_first)</l>
-<l>      dev_display (RegionBorderRect_sliver)  </l>
-<l>*     dev_set_color ('green')</l>
-<l>*     dev_display (ImageReduced_current)</l>
-<c></c>
-<c></c>
-<l>    catch (Exception)</l>
-<l>    endtry</l>
-<c>   * 1033</c>
-<c>    *1160.5</c>
-<c></c>
-<c></c>
+<c>    </c>
+<c>    </c>
+<c>    </c>
 <l>endfor</l>
 </body>
 <docu id="main">
@@ -196,6 +257,7 @@
 </io>
 <oo>
 <par name="RegionTrans" base_type="iconic" dimension="0"/>
+<par name="RegionFillUp" base_type="iconic" dimension="0"/>
 </oo>
 <ic>
 <par name="ImageFiles" base_type="ctrl" dimension="0"/>
@@ -204,6 +266,7 @@
 <par name="Angle_first" base_type="ctrl" dimension="0"/>
 <par name="Row_first" base_type="ctrl" dimension="0"/>
 <par name="Column_first" base_type="ctrl" dimension="0"/>
+<par name="Radius" base_type="ctrl" dimension="0"/>
 </oc>
 </interface>
 <body>
@@ -212,9 +275,10 @@
 <l>    reduce_domain (Image, ROI_0, ImageReduced_line)</l>
 <l>    threshold (ImageReduced_line, Region, 0, 70)</l>
 <l>    connection (Region, ConnectedRegions1)</l>
-<l>    select_shape (ConnectedRegions1, SelectedRegions, 'area', 'and', 3500, 999999)</l>
+<l>    select_shape (ConnectedRegions1, SelectedRegions, 'area', 'and', 500, 999999)</l>
 <l>    shape_trans (SelectedRegions, RegionTrans1, 'rectangle2')</l>
-<l>    get_region_convex (RegionTrans1, Rows, Columns)</l>
+<l>    select_obj (ROI_0, ObjectSelected, 1)</l>
+<l>    get_region_convex (ObjectSelected, Rows, Columns)</l>
 <l>    angle_lx (Rows[3], Columns[3], Rows[0], Columns[0], Angle_first)</l>
 <c>    </c>
 <l>reduce_domain (Image, ROI_1, ImageReduced_Circle)</l>
@@ -227,11 +291,13 @@
 <l>    select_shape (SelectedRegions1, SelectedRegions2, 'roundness', 'and', 0.7, 1)</l>
 <l>    fill_up (SelectedRegions2, RegionFillUp)</l>
 <l>    shape_trans (RegionFillUp, RegionTrans, 'outer_circle')</l>
-<l>* boundary (RegionTrans, RegionTrans, 'inner')</l>
-<l>    area_center (RegionTrans, Area, Row_first, Column_first)</l>
-<l>* dev_display (RegionTrans1)</l>
-<l>* dev_display (RegionTrans)</l>
-<c></c>
+<l>    calculate_features (RegionTrans, ImageReduced_Circle, 'roundness', Features)</l>
+<c>   </c>
+<l>            gen_contour_region_xld (RegionTrans, Contours, 'border')</l>
+<l>            fit_circle_contour_xld (Contours, 'algebraic', -1, 0, 0, 1,3, Row_first, Column_first, Radius, StartPhi, EndPhi, PointOrder)</l>
+<l>*             gen_circle (Circle, Row_first, Column_first, Radius)</l>
+<l>*             boundary (RegionTrans, RegionBorder, 'inner')</l>
+<c>  </c>
 <l>return ()</l>
 </body>
 <docu id="Device_locationn">
@@ -241,8 +307,297 @@
 <parameter id="ImageFiles"/>
 <parameter id="ROI_0"/>
 <parameter id="ROI_1"/>
+<parameter id="Radius"/>
+<parameter id="RegionFillUp"/>
 <parameter id="RegionTrans"/>
 <parameter id="Row_first"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="Homo_trans">
+<interface>
+<io>
+<par name="ROI" base_type="iconic" dimension="0"/>
+<par name="Image" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="ImageReduced_trans" base_type="iconic" dimension="0"/>
+<par name="RegionAffineTrans" base_type="iconic" dimension="0"/>
+</oo>
+<ic>
+<par name="shift_angle" base_type="ctrl" dimension="0"/>
+<par name="shift_row" base_type="ctrl" dimension="0"/>
+<par name="shift_column" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<l>    hom_mat2d_identity (HomMat2DIdentity2)</l>
+<l>    area_center (ROI, Area, Row, Column)</l>
+<l>    hom_mat2d_rotate (HomMat2DIdentity2,shift_angle, Row, Column, HomMat2DRotate)</l>
+<l>    hom_mat2d_translate (HomMat2DRotate,shift_row, shift_column, HomMat2DTranslate) </l>
+<l>    affine_trans_region (ROI, RegionAffineTrans, HomMat2DTranslate, 'nearest_neighbor')</l>
+<l>    reduce_domain (Image, RegionAffineTrans, ImageReduced_trans)</l>
+<l>return ()</l>
+</body>
+<docu id="Homo_trans">
+<parameters>
+<parameter id="Image"/>
+<parameter id="ImageReduced_trans"/>
+<parameter id="ROI"/>
+<parameter id="RegionAffineTrans"/>
+<parameter id="shift_angle"/>
+<parameter id="shift_column"/>
+<parameter id="shift_row"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="circle_inspect">
+<interface>
+<io>
+<par name="ROI_rectangle_circle" base_type="iconic" dimension="0"/>
+<par name="Image" base_type="iconic" dimension="0"/>
+<par name="ROI_rectangle_circle_mini" base_type="iconic" dimension="0"/>
+<par name="ROI_rectangle_circle2" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="ImageReduced_Circle" base_type="iconic" dimension="0"/>
+<par name="RegionAffineTrans2" base_type="iconic" dimension="0"/>
+<par name="Region1" base_type="iconic" dimension="0"/>
+<par name="ConnectedRegions" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions1" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions2" base_type="iconic" dimension="0"/>
+<par name="RegionFillUp" base_type="iconic" dimension="0"/>
+<par name="Contours_bounday" base_type="iconic" dimension="0"/>
+<par name="Circle_first" base_type="iconic" dimension="0"/>
+<par name="Circle_offset_outer" base_type="iconic" dimension="0"/>
+<par name="Circle_offset_inner" base_type="iconic" dimension="0"/>
+<par name="Circle" base_type="iconic" dimension="0"/>
+<par name="Contours_fit_circle" base_type="iconic" dimension="0"/>
+<par name="RegionDifference" base_type="iconic" dimension="0"/>
+<par name="ImageReduced_Circle_mini" base_type="iconic" dimension="0"/>
+<par name="RegionAffineTrans3" base_type="iconic" dimension="0"/>
+<par name="Region1_mini" base_type="iconic" dimension="0"/>
+<par name="ConnectedRegions_mini" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions1_mini" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions2_mini" base_type="iconic" dimension="0"/>
+<par name="RegionFillUp_mini" base_type="iconic" dimension="0"/>
+<par name="Contours_bounday_mini" base_type="iconic" dimension="0"/>
+<par name="Circle_mini" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions3" base_type="iconic" dimension="0"/>
+<par name="Contours_fit_circle_mini" base_type="iconic" dimension="0"/>
+<par name="RegionDifference_mini" base_type="iconic" dimension="0"/>
+<par name="ImageReduced_Circle2" base_type="iconic" dimension="0"/>
+<par name="RegionAffineTrans4" base_type="iconic" dimension="0"/>
+<par name="Region1_2" base_type="iconic" dimension="0"/>
+<par name="ConnectedRegions_2" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions1_2" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions2_2" base_type="iconic" dimension="0"/>
+<par name="RegionFillUp_2" base_type="iconic" dimension="0"/>
+<par name="Contours_bounday_2" base_type="iconic" dimension="0"/>
+<par name="Circle_2" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions4" base_type="iconic" dimension="0"/>
+<par name="Contours_fit_circle_2" base_type="iconic" dimension="0"/>
+<par name="RegionDifference_2" base_type="iconic" dimension="0"/>
+</oo>
+<ic>
+<par name="shift_angle" base_type="ctrl" dimension="0"/>
+<par name="shift_row" base_type="ctrl" dimension="0"/>
+<par name="shift_column" base_type="ctrl" dimension="0"/>
+<par name="Radius_first" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="AbsoluteHisto" base_type="ctrl" dimension="0"/>
+<par name="RelativeHisto" base_type="ctrl" dimension="0"/>
+<par name="MinThresh" base_type="ctrl" dimension="0"/>
+<par name="MaxThresh" base_type="ctrl" dimension="0"/>
+<par name="Features" base_type="ctrl" dimension="0"/>
+<par name="Row_current" base_type="ctrl" dimension="0"/>
+<par name="Column_current" base_type="ctrl" dimension="0"/>
+<par name="Radius" base_type="ctrl" dimension="0"/>
+<par name="StartPhi" base_type="ctrl" dimension="0"/>
+<par name="EndPhi" base_type="ctrl" dimension="0"/>
+<par name="PointOrder" base_type="ctrl" dimension="0"/>
+<par name="AbsoluteHisto2" base_type="ctrl" dimension="0"/>
+<par name="RelativeHisto2" base_type="ctrl" dimension="0"/>
+<par name="Row_current_mini" base_type="ctrl" dimension="0"/>
+<par name="Column_current_mini" base_type="ctrl" dimension="0"/>
+<par name="Radius_mini" base_type="ctrl" dimension="0"/>
+<par name="Exception1" base_type="ctrl" dimension="0"/>
+<par name="Row_current_2" base_type="ctrl" dimension="0"/>
+<par name="Column_current_2" base_type="ctrl" dimension="0"/>
+<par name="Radius_2" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<l>    Homo_trans (ROI_rectangle_circle, Image, ImageReduced_Circle, RegionAffineTrans2, shift_angle, shift_row, shift_column)</l>
+<l>    gray_histo (RegionAffineTrans2, ImageReduced_Circle, AbsoluteHisto, RelativeHisto)</l>
+<l>    histo_to_thresh (AbsoluteHisto, 2, MinThresh, MaxThresh)</l>
+<c>    </c>
+<l>    threshold (ImageReduced_Circle, Region1, MinThresh[0], MaxThresh[0])</l>
+<l>    connection (Region1, ConnectedRegions)</l>
+<l>    select_shape (ConnectedRegions, SelectedRegions1, 'area', 'and',5000, 500000)   </l>
+<l>    select_shape (SelectedRegions1, SelectedRegions2, 'roundness', 'and', 0.7, 1)</l>
+<l>    fill_up (SelectedRegions2, RegionFillUp)</l>
+<l>    calculate_features (RegionFillUp, ImageReduced_Circle, 'roundness', Features)</l>
+<l>*     shape_trans (RegionFillUp, RegionTrans, 'outer_circle')</l>
+<l>    if ( Features &gt;0.8)</l>
+<c>        </c>
+<c>            </c>
+<l>            gen_contour_region_xld (RegionFillUp, Contours_bounday, 'border')</l>
+<l>*             gen_contour_region_xld (RegionTrans, Contours, 'border')</l>
+<l>            fit_circle_contour_xld (Contours_bounday, 'atukey', -1, 0, 0, 31,2, Row_current, Column_current, Radius, StartPhi, EndPhi, PointOrder)</l>
+<l>            gen_circle_contour_xld (Circle_first, Row_current, Column_current, Radius_first, 0, 6.28318, 'positive', 3)</l>
+<l>            gen_circle_contour_xld (Circle_offset_outer, Row_current, Column_current, Radius+10, 0, 6.28318, 'positive', 3)</l>
+<l>            gen_circle_contour_xld (Circle_offset_inner, Row_current, Column_current, Radius-10, 0, 6.28318, 'positive', 3)</l>
+<l>*             polar_trans_image_inv(ImageReduced_Circle, PolarTransImage, 256, 256, 0, 6.28319, Radius-10, Radius+10, 20, 40, 'nearest_neighbor')</l>
+<l>*             polar_trans_contour_xld (Circle_offset_inner, PolarTransContour, Row_current, Column_current, 0, 6.28319, Radius-10, Radius+10, 20, 40)</l>
+<l>            stop()</l>
+<c>            *Reduce domain</c>
+<l>            gen_circle (Circle, Row_current, Column_current, Radius)</l>
+<l>            gen_contour_region_xld (Circle, Contours_fit_circle, 'border')</l>
+<l>            difference (Circle, RegionFillUp, RegionDifference)      </l>
+<l>            dev_clear_window ()</l>
+<l>            dev_display (ImageReduced_Circle)</l>
+<l>            dev_set_line_width (3)</l>
+<l>            dev_set_color ('red')</l>
+<l>             dev_display (Circle_offset_outer)</l>
+<l>             dev_display (Circle_offset_inner)</l>
+<l>             dev_set_line_width (2)</l>
+<l>             dev_display (RegionDifference)</l>
+<l>             dev_set_color ('yellow')</l>
+<l>             dev_display (Contours_fit_circle)</l>
+<c></c>
+<l>            dev_set_color ('green')</l>
+<l>             dev_display (Circle_first)           </l>
+<l>            stop()  </l>
+<l>    endif</l>
+<l>  try  </l>
+<l>    Homo_trans (ROI_rectangle_circle_mini, Image, ImageReduced_Circle_mini, RegionAffineTrans3, shift_angle, shift_row, shift_column)</l>
+<l>    gray_histo (RegionAffineTrans3, ImageReduced_Circle_mini, AbsoluteHisto2, RelativeHisto2)</l>
+<l>    histo_to_thresh (AbsoluteHisto, 1, MinThresh, MaxThresh)</l>
+<c>    </c>
+<l>    threshold (ImageReduced_Circle_mini, Region1_mini, MinThresh[0], MaxThresh[0]+10)</l>
+<l>    connection (Region1_mini, ConnectedRegions_mini)</l>
+<l>    select_shape (ConnectedRegions_mini, SelectedRegions1_mini, 'area', 'and',1000, 500000)   </l>
+<l>    select_shape (SelectedRegions1_mini, SelectedRegions2_mini, 'roundness', 'and', 0.5, 1)</l>
+<l>    fill_up (SelectedRegions2_mini, RegionFillUp_mini)</l>
+<l>    calculate_features (RegionFillUp_mini, ImageReduced_Circle_mini, 'roundness', Features)</l>
+<c>  </c>
+<l>            gen_contour_region_xld (RegionFillUp_mini, Contours_bounday_mini, 'border')</l>
+<l>            fit_circle_contour_xld (Contours_bounday_mini, 'atukey', -1, 0, 0, 1,1, Row_current_mini, Column_current_mini, Radius_mini, StartPhi, EndPhi, PointOrder)</l>
+<c>            *Reduce domain</c>
+<l>            gen_circle (Circle_mini, Row_current_mini, Column_current_mini, Radius_mini)</l>
+<l>            select_shape (Circle_mini, SelectedRegions3, 'outer_radius', 'and', 80, 100)</l>
+<l>            gen_contour_region_xld (SelectedRegions3, Contours_fit_circle_mini, 'border')</l>
+<l>            difference (SelectedRegions3, RegionFillUp_mini, RegionDifference_mini)      </l>
+<l>            dev_clear_window ()</l>
+<l>            dev_display (ImageReduced_Circle_mini)</l>
+<l>            dev_display (RegionDifference_mini)    </l>
+<l>            dev_set_line_width (3)</l>
+<l>            dev_display (Contours_fit_circle_mini)       </l>
+<l>            stop()  </l>
+<l>  catch (Exception1)</l>
+<l>  endtry</l>
+<c>            </c>
+<c>            </c>
+<c>            </c>
+<l>    Homo_trans (ROI_rectangle_circle2, Image, ImageReduced_Circle2, RegionAffineTrans4, shift_angle, shift_row, shift_column)</l>
+<l>    gray_histo (RegionAffineTrans4, ImageReduced_Circle2, AbsoluteHisto2, RelativeHisto2)</l>
+<l>    histo_to_thresh (AbsoluteHisto, 1, MinThresh, MaxThresh)</l>
+<c>    </c>
+<l>    threshold (ImageReduced_Circle2, Region1_2, MinThresh[0], MaxThresh[0]+10)</l>
+<l>    connection (Region1_2, ConnectedRegions_2)</l>
+<l>    select_shape (ConnectedRegions_2, SelectedRegions1_2, 'area', 'and',2000, 500000)   </l>
+<l>    select_shape (SelectedRegions1_2, SelectedRegions2_2, 'roundness', 'and', 0.5, 1)</l>
+<l>    fill_up (SelectedRegions2_2, RegionFillUp_2)</l>
+<l>    calculate_features (RegionFillUp_2, ImageReduced_Circle2, 'roundness', Features)</l>
+<c>  </c>
+<l>            gen_contour_region_xld (RegionFillUp_2, Contours_bounday_2, 'border')</l>
+<l>            fit_circle_contour_xld (Contours_bounday_2, 'atukey', -1, 0, 0, 13,1, Row_current_2, Column_current_2, Radius_2, StartPhi, EndPhi, PointOrder)</l>
+<c>            *Reduce domain</c>
+<l>            gen_circle (Circle_2, Row_current_2, Column_current_2, Radius_2)</l>
+<l>            select_shape (Circle_2, SelectedRegions4, 'outer_radius', 'and', 120, 170)</l>
+<l>            gen_contour_region_xld (SelectedRegions4, Contours_fit_circle_2, 'border')</l>
+<l>            difference (SelectedRegions4, RegionFillUp_2, RegionDifference_2)      </l>
+<l>            dev_clear_window ()</l>
+<l>            dev_display (ImageReduced_Circle2)</l>
+<l>            dev_display (RegionDifference_2)    </l>
+<l>            dev_set_line_width (3)</l>
+<l>            dev_display (Contours_fit_circle_2)       </l>
+<l>            stop()  </l>
+<c>         </c>
+<c>            </c>
+<c>            </c>
+<l>return ()</l>
+</body>
+<docu id="circle_inspect">
+<parameters>
+<parameter id="AbsoluteHisto"/>
+<parameter id="AbsoluteHisto2"/>
+<parameter id="Circle"/>
+<parameter id="Circle_2"/>
+<parameter id="Circle_first"/>
+<parameter id="Circle_mini"/>
+<parameter id="Circle_offset_inner"/>
+<parameter id="Circle_offset_outer"/>
+<parameter id="Column_current"/>
+<parameter id="Column_current_2"/>
+<parameter id="Column_current_mini"/>
+<parameter id="ConnectedRegions"/>
+<parameter id="ConnectedRegions_2"/>
+<parameter id="ConnectedRegions_mini"/>
+<parameter id="Contours_bounday"/>
+<parameter id="Contours_bounday_2"/>
+<parameter id="Contours_bounday_mini"/>
+<parameter id="Contours_fit_circle"/>
+<parameter id="Contours_fit_circle_2"/>
+<parameter id="Contours_fit_circle_mini"/>
+<parameter id="EndPhi"/>
+<parameter id="Exception1"/>
+<parameter id="Features"/>
+<parameter id="Image"/>
+<parameter id="ImageReduced_Circle"/>
+<parameter id="ImageReduced_Circle2"/>
+<parameter id="ImageReduced_Circle_mini"/>
+<parameter id="MaxThresh"/>
+<parameter id="MinThresh"/>
+<parameter id="PointOrder"/>
+<parameter id="ROI_rectangle_circle"/>
+<parameter id="ROI_rectangle_circle2"/>
+<parameter id="ROI_rectangle_circle_mini"/>
+<parameter id="Radius"/>
+<parameter id="Radius_2"/>
+<parameter id="Radius_first"/>
+<parameter id="Radius_mini"/>
+<parameter id="Region1"/>
+<parameter id="Region1_2"/>
+<parameter id="Region1_mini"/>
+<parameter id="RegionAffineTrans2"/>
+<parameter id="RegionAffineTrans3"/>
+<parameter id="RegionAffineTrans4"/>
+<parameter id="RegionDifference"/>
+<parameter id="RegionDifference_2"/>
+<parameter id="RegionDifference_mini"/>
+<parameter id="RegionFillUp"/>
+<parameter id="RegionFillUp_2"/>
+<parameter id="RegionFillUp_mini"/>
+<parameter id="RelativeHisto"/>
+<parameter id="RelativeHisto2"/>
+<parameter id="Row_current"/>
+<parameter id="Row_current_2"/>
+<parameter id="Row_current_mini"/>
+<parameter id="SelectedRegions1"/>
+<parameter id="SelectedRegions1_2"/>
+<parameter id="SelectedRegions1_mini"/>
+<parameter id="SelectedRegions2"/>
+<parameter id="SelectedRegions2_2"/>
+<parameter id="SelectedRegions2_mini"/>
+<parameter id="SelectedRegions3"/>
+<parameter id="SelectedRegions4"/>
+<parameter id="StartPhi"/>
+<parameter id="shift_angle"/>
+<parameter id="shift_column"/>
+<parameter id="shift_row"/>
 </parameters>
 </docu>
 </procedure>
