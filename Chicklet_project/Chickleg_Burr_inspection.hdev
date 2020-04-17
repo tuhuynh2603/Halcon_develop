@@ -13,129 +13,49 @@
 <l>    gen_rectangle1 (ROI_rectangle_circle, 696.081,850.392, 1370.3, 1470.92)     </l>
 <l>    Device_locationn (ROI_rectangle_line, ROI_rectangle_circle, Region_first, RegionFillUp_first, ImageFiles[128], Angle_first, Row_first, Column_first, Radius_first)</l>
 <c></c>
-<c>       </c>
-<l>    gen_rectangle1 (ROI_rectangle_sliver, 5.6, 676.164,2048, 772.875)     </l>
-<l>    gen_rectangle1 (ROI_rectangle_sliver_croptop, 276.509, 681.106, 342.406, 770.26)</l>
-<l>    gen_rectangle1 (ROI_rectangle_sliver_cropbot, 1833.39, 632.945, 1971.94, 879.04)</l>
+<c>     * Die inspection  </c>
+<l>    gen_rectangle1 (AdhesivSliverROI, 5.6, 676.164,2048, 772.875)     </l>
+<l>    gen_rectangle1 (AdhesivSliverTopROI, 276.509, 681.106, 342.406, 770.26)</l>
+<l>    gen_rectangle1 (AdhesivSliverBotROI, 1833.39, 632.945, 1971.94, 879.04)</l>
+<c>     </c>
 <c></c>
-<l>    gen_rectangle1 (ROI_rectangle_circle2, 13.7639, 750.993, 539.675, 1405.06)</l>
-<l>    gen_rectangle1 (ROI_rectangle_circle_mini, 1121.76, 1773.96, 1379.43, 2040.06)</l>
+<l>*     gen_rectangle1 (ROI_rectangle_circle2, 13.7639, 750.993, 539.675, 1405.06)</l>
+<l>*     gen_rectangle1 (ROI_rectangle_circle_mini, 1121.76, 1773.96, 1379.43, 2040.06)</l>
 <c></c>
 <c></c>
+<l>    Expand_Value :=30</l>
 <c>    **</c>
 <c>    **</c>
 <c>    ** Tracing </c>
 <c>    </c>
-<c></c>
+<l>gen_rectangle1 (ROI_0, 876.377, 974.845, 1217.59, 1307.3)</l>
 <l>for i := 128 to Length -1 by 1</l>
 <l>    read_image (Image, ImageFiles[i])</l>
 <c></c>
 <l>*     try</l>
-<l>    Device_locationn (ROI_rectangle_line, ROI_rectangle_circle, RegionBorder_current, RegionCircle_fillup_current, ImageFiles[i], Angle_current, Row_current, Column_current, Radius_current)</l>
-<l>    shift_angle := Angle_current - Angle_first</l>
+<l>    Device_locationn (ROI_rectangle_line, ROI_rectangle_circle, RegionBorder_current, RegionCircle_fillup_current, ImageFiles[i], nShiftAngle, Row_current, Column_current, Radius_current)</l>
+<l>    shift_angle := nShiftAngle - Angle_first</l>
 <l>    shift_row := Row_current -Row_first</l>
 <l>    shift_column := Column_current - Column_first</l>
-<l>      dev_set_line_width (1)</l>
-<c>    *sliver inspect</c>
-<c>   </c>
-<l>    Homo_trans (ROI_rectangle_sliver, Image, ImageReduced_sliver, RegionAffineTrans, shift_angle, shift_row, shift_column)</l>
-<c>   </c>
 <c></c>
-<l>    gray_histo (RegionAffineTrans, ImageReduced_sliver, AbsoluteHisto, RelativeHisto)</l>
-<l>    histo_to_thresh (AbsoluteHisto, 2, MinThresh, MaxThresh)</l>
+<l>*     Homo_trans (ROI_0, Image, ImageReduced_sliver, RegionAffineTrans, shift_angle, shift_row, shift_column)  </l>
+<l>*         _FCI_ChickletSwageHole_Roundness (RegionAffineTrans, Image, BurrRegion, HoleLocation, DebugImageOut, DebugRegionOut, 1, 0.01, 20, 255, 100, 0.93, IsBurr, Roundness, RadiusOut, DebugMessageOut)         </l>
+<c>   </c>
 <c>    </c>
-<l>    dev_clear_window ()</l>
-<l>    mul := 255/(255- MaxThresh[0])</l>
-<l>    add := -MaxThresh[0]*mul</l>
 <c>    </c>
-<c>     *remove black</c>
-<l>    scale_image (ImageReduced_sliver, ImageScaled, mul,add)</l>
-<l>    threshold (ImageScaled, Region_black, 41, 255)</l>
-<l>    opening_circle (Region_black, RegionOpening1, 5)</l>
-<l>    opening_rectangle1 (RegionOpening1, RegionOpening, 3, 50)</l>
-<l>    connection (RegionOpening, ConnectedRegions)</l>
-<l>    select_shape (ConnectedRegions, SelectedRegions, 'area', 'and', 3500, 9999999)</l>
-<l>    union1 (SelectedRegions, RegionUnion_black)</l>
-<l>    dev_clear_window ()</l>
-<l>    boundary (RegionUnion_black, RegionBorder, 'inner')</l>
-<l>    reduce_domain (ImageReduced_sliver, RegionUnion_black, ImageReduced_black)</l>
-<l>    lines_gauss (ImageReduced_black, Lines1, 1.5, 3, 8, 'light', 'true', 'bar-shaped', 'true')</l>
-<c>    *Remve White</c>
-<l>*     mean_image (ImageReduced_black, ImageMean1, 1, 15)</l>
+<l>   Homo_trans (AdhesivSliverROI, Image, ImageReduced_sliver, AdhesivSliverROITrans, nShiftAngle, shift_row, shift_column)  </l>
+<l>   Homo_trans (AdhesivSliverTopROI, Image, ImageReduced_sliver, AdhesivSliverTopROITrans, nShiftAngle, shift_row, shift_column)  </l>
+<l>   Homo_trans (AdhesivSliverBotROI, Image, ImageReduced_sliver, AdhesivSliverBotROITrans, nShiftAngle, shift_row, shift_column)  </l>
 <c></c>
-<l>     threshold (ImageReduced_black, Region_white, 200, 255)</l>
-<l>     threshold_sub_pix (ImageReduced_black, Border, 120)</l>
-<l>     edges_sub_pix (ImageReduced_black, Edges1, 'canny', 1, 20, 40)</l>
-<l>     dilation_rectangle1 (Region_white, RegionDilation, 5, 1)</l>
-<l>     difference (RegionUnion_black, RegionDilation, RegionDifference)</l>
+<l>   nMinThresh := 60</l>
+<l>   nMaxThresh := 95</l>
+<l>   IsStepDebug :=0</l>
+<l>   nDieOffset := 20 </l>
 <c>   </c>
-<l>     reduce_domain (Image, RegionDifference, ImageReduced_whiteblack)</l>
+<l>   concat_obj (AdhesivSliverROITrans, AdhesivSliverTopROITrans, ObjectsConcat)</l>
+<l>   concat_obj (ObjectsConcat, AdhesivSliverBotROITrans, ASliverBotROIProjection)</l>
+<l>        _FCI_Sliver_Adhesive_Coverage_Inspection (ASliverBotROIProjection, Image, SliverCoverageRegion, MidDieLocation, DebugImageOut, DebugRegionOut, DieSearchLocation, IsStepDebug, nDieOffset, nMinThresh, nMaxThresh, nShiftAngle, IsPass, DebugMessageOut)</l>
 <c></c>
-<l>     lines_gauss (ImageReduced_whiteblack, Lines2, 1.5, 3, 8, 'light', 'true', 'bar-shaped', 'true')</l>
-<l>     dev_clear_window ()</l>
-<l>     dev_display (Image)</l>
-<c></c>
-<c>   </c>
-<l>     dev_display (RegionBorder)</l>
-<l>     stop()</l>
-<l>     dev_clear_window ()</l>
-<l>     hysteresis_threshold (ImageReduced_sliver, RegionHysteresis, 78, 90,35)</l>
-<l>     difference (RegionAffineTrans, RegionHysteresis, RegionDifference_sliver)</l>
-<l>     gen_rectangle2 (Rectangle, Row_current, Column_current, -shift_angle, 1,20)</l>
-<l>     opening (RegionDifference_sliver, Rectangle, RegionOpening)</l>
-<l>     gen_rectangle2 (Rectangle2, Row_current, Column_current, -shift_angle, 5, 1)</l>
-<l>     closing (RegionOpening, Rectangle2, RegionClosing)</l>
-<l>     connection (RegionClosing, ConnectedRegions1)</l>
-<l>     select_shape (ConnectedRegions1, SelectedRegions_closing, 'height', 'and', 500, 99999)</l>
-<l>     count_obj (SelectedRegions_closing, Number)</l>
-<l>     if (Number &gt;=1)</l>
-<l>        union1 (SelectedRegions_closing, RegionUnion_closing)</l>
-<l>        shape_trans (RegionUnion_closing, RegionTrans2, 'convex')</l>
-<l>        shape_trans (RegionTrans2, RegionTrans_rec, 'rectangle2')</l>
-<l>        get_region_polygon (RegionTrans_rec, 5, Rowsg, Columnsg)</l>
-<l>        intersection_lines (Rowsg[0], Columnsg[0], Rowsg[1], Columnsg[1], 0, 0, 0, 2048, Row1, Column1, IsOverlapping)</l>
-<l>*         gen_circle (Circle, Row1, Column1, 10)</l>
-<l>        intersection_lines (Rowsg[2], Columnsg[2], Rowsg[3], Columnsg[3], 0, 0, 0, 2048, Row2, Column2, IsOverlapping)</l>
-<c>        </c>
-<l>        intersection_lines (Rowsg[0], Columnsg[0], Rowsg[1], Columnsg[1], 2048, 0, 2048, 2048, Row3, Column3, IsOverlapping)</l>
-<l>        intersection_lines (Rowsg[2], Columnsg[2], Rowsg[3], Columnsg[3], 2048, 0, 2048, 2048, Row4, Column4, IsOverlapping)</l>
-<c>        </c>
-<l>        Rowss := [Row1,Row2,Row4,Row3,Row1]</l>
-<l>        Colss :=  [Column1, Column2, Column4, Column3,Column1]</l>
-<l>        gen_contour_polygon_xld (Contour_recpo, Rowss, Colss)</l>
-<l>        gen_region_contour_xld (Contour_recpo, Region_recpolygon, 'filled')</l>
-<l>        reduce_domain (Image, Region_recpolygon, ImageReduced_polygon)</l>
-<c>        </c>
-<c>        * Remove top </c>
-<l>        if(1)</l>
-<l>            Homo_trans (ROI_rectangle_sliver_croptop, ImageReduced_polygon, ImageReduced_sliver_crop, RegionAffineTrans, shift_angle, shift_row, shift_column)</l>
-<l>            threshold (ImageReduced_sliver_crop, ThreshRegion_poly_crop, 170, 255)</l>
-<l>            difference (Region_recpolygon, ThreshRegion_poly_crop, RegionDifference2)</l>
-<l>            connection (RegionDifference2, ConnectedRegions2)</l>
-<l>            select_shape (ConnectedRegions2, SelectedRegions1, 'height', 'and', 800, 99999)</l>
-<l>            union1 (SelectedRegions1, RegionUnion)</l>
-<l>            gen_rectangle2 (Rectangle_expand2, Row_current, Column_current, -shift_angle, 20, 1)</l>
-<l>            dilation1 (RegionUnion, Rectangle_expand2, RegionDilation1, 1)</l>
-<c>        </c>
-<l>        else</l>
-<l>            Homo_trans (ROI_rectangle_sliver_cropbot, ImageReduced_polygon, ImageReduced_sliver_crop, RegionAffineTrans, shift_angle, shift_row, shift_column)</l>
-<l>            threshold (ImageReduced_sliver_crop, ThreshRegion_poly_crop, 0, 30)</l>
-<l>            difference (Region_recpolygon, ThreshRegion_poly_crop, RegionDifference2)</l>
-<l>            connection (RegionDifference2, ConnectedRegions2)</l>
-<l>            select_shape (ConnectedRegions2, SelectedRegions1, 'height', 'and', 800, 99999)</l>
-<l>            union1 (SelectedRegions1, RegionUnion)</l>
-<l>        endif</l>
-<l>        dev_clear_window()</l>
-<l>        dev_display (Image)</l>
-<l>        dev_set_draw ('margin')</l>
-<l>        dev_display (RegionUnion)</l>
-<c>        * remove bottom</c>
-<l>     endif</l>
-<l>stop()</l>
-<c>    </c>
-<c>    *circle inspect</c>
-<l>*         circle_inspect (ROI_rectangle_circle, Image, ROI_rectangle_circle_mini, ROI_rectangle_circle2, ImageReduced_Circle, RegionAffineTrans2, Region1, ConnectedRegions, SelectedRegions1, SelectedRegions2, RegionFillUp, Contours_bounday, Circle_first, Circle_offset_outer, Circle_offset_inner, Circle, Contours_fit_circle, RegionDifference, ImageReduced_Circle_mini, RegionAffineTrans3, Region1_mini, ConnectedRegions_mini, SelectedRegions1_mini, SelectedRegions2_mini, RegionFillUp_mini, Contours_bounday_mini, Circle_mini, SelectedRegions3, Contours_fit_circle_mini, RegionDifference_mini, ImageReduced_Circle2, RegionAffineTrans4, Region1_2, ConnectedRegions_2, SelectedRegions1_2, SelectedRegions2_2, RegionFillUp_2, Contours_bounday_2, Circle_2, SelectedRegions4, Contours_fit_circle_2, RegionDifference_2, shift_angle, shift_row, shift_column, Radius_first, AbsoluteHisto, RelativeHisto, MinThresh, MaxThresh, Features, Row_current, Column_current, Radius, StartPhi, EndPhi, PointOrder, AbsoluteHisto2, RelativeHisto2, Row_current_mini, Column_current_mini, Radius_mini, Exception1, Row_current_2, Column_current_2, Radius_2)</l>
-<c>            </c>
 <l>*     catch (Exception)</l>
 <l>*     endtry</l>
 <c>    </c>
@@ -482,7 +402,6 @@
 <l>    select_shape (SelectedRegions1_mini, SelectedRegions2_mini, 'roundness', 'and', 0.5, 1)</l>
 <l>    fill_up (SelectedRegions2_mini, RegionFillUp_mini)</l>
 <l>    calculate_features (RegionFillUp_mini, ImageReduced_Circle_mini, 'roundness', Features)</l>
-<c>  </c>
 <l>            gen_contour_region_xld (RegionFillUp_mini, Contours_bounday_mini, 'border')</l>
 <l>            fit_circle_contour_xld (Contours_bounday_mini, 'atukey', -1, 0, 0, 1,1, Row_current_mini, Column_current_mini, Radius_mini, StartPhi, EndPhi, PointOrder)</l>
 <c>            *Reduce domain</c>
@@ -500,7 +419,7 @@
 <l>  endtry</l>
 <c>            </c>
 <c>            </c>
-<c>            </c>
+<l>_FCI_EncapDefect_Extraction (ROI_rectangle_circle, ROI_rectangle_circle, EncapDefectRegion, DebugImageOut, DebugRegionOut, shift_angle, shift_angle, shift_angle, shift_angle, IsDefectFound, DebugMessageOut)</l>
 <l>    Homo_trans (ROI_rectangle_circle2, Image, ImageReduced_Circle2, RegionAffineTrans4, shift_angle, shift_row, shift_column)</l>
 <l>    gray_histo (RegionAffineTrans4, ImageReduced_Circle2, AbsoluteHisto2, RelativeHisto2)</l>
 <l>    histo_to_thresh (AbsoluteHisto, 1, MinThresh, MaxThresh)</l>
@@ -598,6 +517,767 @@
 <parameter id="shift_angle"/>
 <parameter id="shift_column"/>
 <parameter id="shift_row"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="Adhesive_inspect">
+<interface>
+<io>
+<par name="ROI_rectangle_sliver" base_type="iconic" dimension="0"/>
+<par name="Image" base_type="iconic" dimension="0"/>
+<par name="ROI_rectangle_sliver_croptop" base_type="iconic" dimension="0"/>
+<par name="ROI_rectangle_sliver_cropbot" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="ImageReduced_sliver" base_type="iconic" dimension="0"/>
+<par name="RegionAffineTrans" base_type="iconic" dimension="0"/>
+<par name="RegionHysteresis" base_type="iconic" dimension="0"/>
+<par name="RegionDifference_sliver" base_type="iconic" dimension="0"/>
+<par name="Rectangle" base_type="iconic" dimension="0"/>
+<par name="RegionOpening" base_type="iconic" dimension="0"/>
+<par name="Rectangle2" base_type="iconic" dimension="0"/>
+<par name="RegionClosing" base_type="iconic" dimension="0"/>
+<par name="ConnectedRegions1" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions_closing" base_type="iconic" dimension="0"/>
+<par name="RegionUnion_closing" base_type="iconic" dimension="0"/>
+<par name="RegionTrans2" base_type="iconic" dimension="0"/>
+<par name="RegionTrans_rec" base_type="iconic" dimension="0"/>
+<par name="Circle" base_type="iconic" dimension="0"/>
+<par name="Contour_recpo" base_type="iconic" dimension="0"/>
+<par name="Region_recpolygon" base_type="iconic" dimension="0"/>
+<par name="ImageReduced_polygon" base_type="iconic" dimension="0"/>
+<par name="ImageReduced_sliver_crop" base_type="iconic" dimension="0"/>
+<par name="ThreshRegion_poly_crop" base_type="iconic" dimension="0"/>
+<par name="RegionDifference2" base_type="iconic" dimension="0"/>
+<par name="ConnectedRegions2" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions1" base_type="iconic" dimension="0"/>
+<par name="RegionUnion" base_type="iconic" dimension="0"/>
+<par name="Rectangle_expand2" base_type="iconic" dimension="0"/>
+<par name="RegionDilation1" base_type="iconic" dimension="0"/>
+<par name="Rectangle_expand3" base_type="iconic" dimension="0"/>
+<par name="RegionDifference3" base_type="iconic" dimension="0"/>
+<par name="ConnectedRegions4" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions_right" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions_left" base_type="iconic" dimension="0"/>
+<par name="ImageReduced" base_type="iconic" dimension="0"/>
+<par name="ImageDeviation" base_type="iconic" dimension="0"/>
+<par name="ImageMean" base_type="iconic" dimension="0"/>
+<par name="Region1" base_type="iconic" dimension="0"/>
+<par name="RegionDifference1" base_type="iconic" dimension="0"/>
+<par name="RegionClosing1" base_type="iconic" dimension="0"/>
+<par name="ConnectedRegions3" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions3" base_type="iconic" dimension="0"/>
+<par name="RegionUnion1" base_type="iconic" dimension="0"/>
+<par name="RegionTrans" base_type="iconic" dimension="0"/>
+<par name="RegionDilation2" base_type="iconic" dimension="0"/>
+<par name="RegionDifference4" base_type="iconic" dimension="0"/>
+<par name="RegionDilation3" base_type="iconic" dimension="0"/>
+<par name="RegionUnion2" base_type="iconic" dimension="0"/>
+<par name="RegionUnion_left_right" base_type="iconic" dimension="0"/>
+<par name="ImageReduced_left_right" base_type="iconic" dimension="0"/>
+<par name="ImageReduced_mid" base_type="iconic" dimension="0"/>
+<par name="ImageScaled" base_type="iconic" dimension="0"/>
+<par name="RegionHysteresis1" base_type="iconic" dimension="0"/>
+<par name="Region_white_high" base_type="iconic" dimension="0"/>
+<par name="ConnectedRegions5" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions_center_left" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions_center_right" base_type="iconic" dimension="0"/>
+<par name="RegionUnion_White_LR" base_type="iconic" dimension="0"/>
+<par name="Rectangle_connect_white" base_type="iconic" dimension="0"/>
+<par name="RegionClosing_strong_white" base_type="iconic" dimension="0"/>
+<par name="RegionFillUp" base_type="iconic" dimension="0"/>
+<par name="Rectangle1" base_type="iconic" dimension="0"/>
+<par name="RegionOpening1" base_type="iconic" dimension="0"/>
+<par name="ConnectedRegions" base_type="iconic" dimension="0"/>
+<par name="SelectedRegions" base_type="iconic" dimension="0"/>
+<par name="RegionDifference" base_type="iconic" dimension="0"/>
+</oo>
+<ic>
+<par name="shift_angle" base_type="ctrl" dimension="0"/>
+<par name="shift_row" base_type="ctrl" dimension="0"/>
+<par name="shift_column" base_type="ctrl" dimension="0"/>
+<par name="Row_current" base_type="ctrl" dimension="0"/>
+<par name="Column_current" base_type="ctrl" dimension="0"/>
+<par name="Expand_Value" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="Number" base_type="ctrl" dimension="0"/>
+<par name="Rowsg" base_type="ctrl" dimension="0"/>
+<par name="Columnsg" base_type="ctrl" dimension="0"/>
+<par name="Row1" base_type="ctrl" dimension="0"/>
+<par name="Column1" base_type="ctrl" dimension="0"/>
+<par name="IsOverlapping" base_type="ctrl" dimension="0"/>
+<par name="Row2" base_type="ctrl" dimension="0"/>
+<par name="Column2" base_type="ctrl" dimension="0"/>
+<par name="Row3" base_type="ctrl" dimension="0"/>
+<par name="Column3" base_type="ctrl" dimension="0"/>
+<par name="Row4" base_type="ctrl" dimension="0"/>
+<par name="Column4" base_type="ctrl" dimension="0"/>
+<par name="Rowss" base_type="ctrl" dimension="0"/>
+<par name="Colss" base_type="ctrl" dimension="0"/>
+<par name="Area" base_type="ctrl" dimension="0"/>
+<par name="Row" base_type="ctrl" dimension="0"/>
+<par name="Column" base_type="ctrl" dimension="0"/>
+<par name="AbsoluteHisto" base_type="ctrl" dimension="0"/>
+<par name="RelativeHisto" base_type="ctrl" dimension="0"/>
+<par name="MinThresh" base_type="ctrl" dimension="0"/>
+<par name="MaxThresh" base_type="ctrl" dimension="0"/>
+<par name="mul" base_type="ctrl" dimension="0"/>
+<par name="add" base_type="ctrl" dimension="0"/>
+<par name="Area1" base_type="ctrl" dimension="0"/>
+<par name="Row_left" base_type="ctrl" dimension="0"/>
+<par name="Column_left" base_type="ctrl" dimension="0"/>
+<par name="Area2" base_type="ctrl" dimension="0"/>
+<par name="Row_right" base_type="ctrl" dimension="0"/>
+<par name="Column_right" base_type="ctrl" dimension="0"/>
+<par name="height_remove" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<l>    Homo_trans (ROI_rectangle_sliver, Image, ImageReduced_sliver, RegionAffineTrans, shift_angle, shift_row, shift_column)</l>
+<c>   </c>
+<c></c>
+<c></c>
+<l>     dev_clear_window ()</l>
+<l>     hysteresis_threshold (ImageReduced_sliver, RegionHysteresis, 78, 90,35)</l>
+<l>     difference (RegionAffineTrans, RegionHysteresis, RegionDifference_sliver)</l>
+<l>     gen_rectangle2 (Rectangle, Row_current, Column_current, -shift_angle, 1,20)</l>
+<l>     opening (RegionDifference_sliver, Rectangle, RegionOpening)</l>
+<l>     gen_rectangle2 (Rectangle2, Row_current, Column_current, -shift_angle, 5, 1)</l>
+<l>     closing (RegionOpening, Rectangle2, RegionClosing)</l>
+<l>     connection (RegionClosing, ConnectedRegions1)</l>
+<l>     select_shape (ConnectedRegions1, SelectedRegions_closing, 'height', 'and', 500, 99999)</l>
+<l>     count_obj (SelectedRegions_closing, Number)</l>
+<l>     if (Number &gt;=1)</l>
+<l>        union1 (SelectedRegions_closing, RegionUnion_closing)</l>
+<l>        shape_trans (RegionUnion_closing, RegionTrans2, 'convex')</l>
+<l>        shape_trans (RegionTrans2, RegionTrans_rec, 'rectangle2')</l>
+<l>        get_region_polygon (RegionTrans_rec, 5, Rowsg, Columnsg)</l>
+<l>        intersection_lines (Rowsg[0], Columnsg[0], Rowsg[1], Columnsg[1], 0, 0, 0, 2048, Row1, Column1, IsOverlapping)</l>
+<l>*         gen_circle (Circle, Row1, Column1, 10)</l>
+<l>        intersection_lines (Rowsg[2], Columnsg[2], Rowsg[3], Columnsg[3], 0, 0, 0, 2048, Row2, Column2, IsOverlapping)</l>
+<c>        </c>
+<l>        intersection_lines (Rowsg[0], Columnsg[0], Rowsg[1], Columnsg[1], 2048, 0, 2048, 2048, Row3, Column3, IsOverlapping)</l>
+<l>        intersection_lines (Rowsg[2], Columnsg[2], Rowsg[3], Columnsg[3], 2048, 0, 2048, 2048, Row4, Column4, IsOverlapping)</l>
+<c>        </c>
+<l>        Rowss := [Row1,Row2,Row4,Row3,Row1]</l>
+<l>        Colss :=  [Column1, Column2, Column4, Column3,Column1]</l>
+<l>        gen_contour_polygon_xld (Contour_recpo, Rowss, Colss)</l>
+<l>        gen_region_contour_xld (Contour_recpo, Region_recpolygon, 'filled')</l>
+<l>        reduce_domain (Image, Region_recpolygon, ImageReduced_polygon)</l>
+<c>        </c>
+<c>        * Remove top </c>
+<l>        if(1)</l>
+<l>            Homo_trans (ROI_rectangle_sliver_croptop, ImageReduced_polygon, ImageReduced_sliver_crop, RegionAffineTrans, shift_angle, shift_row, shift_column)</l>
+<l>            threshold (ImageReduced_sliver_crop, ThreshRegion_poly_crop, 170, 255)</l>
+<l>            difference (Region_recpolygon, ThreshRegion_poly_crop, RegionDifference2)</l>
+<l>            connection (RegionDifference2, ConnectedRegions2)</l>
+<l>            select_shape (ConnectedRegions2, SelectedRegions1, 'height', 'and', 800, 99999)</l>
+<l>            union1 (SelectedRegions1, RegionUnion)</l>
+<l>            gen_rectangle2 (Rectangle_expand2, Row_current, Column_current, -shift_angle, Expand_Value, 1)</l>
+<l>            dilation1 (RegionUnion, Rectangle_expand2, RegionDilation1, 1)</l>
+<l>         dev_clear_window()</l>
+<l>        dev_display (Image)</l>
+<l>*         dev_set_draw ('margin')</l>
+<l>        dev_display (RegionUnion)              </l>
+<l>        else</l>
+<l>            Homo_trans (ROI_rectangle_sliver_cropbot, ImageReduced_polygon, ImageReduced_sliver_crop, RegionAffineTrans, shift_angle, shift_row, shift_column)</l>
+<l>            threshold (ImageReduced_sliver_crop, ThreshRegion_poly_crop, 0, 30)</l>
+<l>            difference (Region_recpolygon, ThreshRegion_poly_crop, RegionDifference2)</l>
+<l>            connection (RegionDifference2, ConnectedRegions2)</l>
+<l>            select_shape (ConnectedRegions2, SelectedRegions1, 'height', 'and', 800, 99999)</l>
+<l>            union1 (SelectedRegions1, RegionUnion)  </l>
+<l>            gen_rectangle2 (Rectangle_expand3, Row_current, Column_current, -shift_angle, Expand_Value, 1)</l>
+<c></c>
+<l>            dilation1 (RegionUnion, Rectangle_expand3, RegionDilation1, 1) </l>
+<c>            </c>
+<l>        endif</l>
+<c>   </c>
+<c>        </c>
+<c>      * gen 3 area to inspection</c>
+<c>      </c>
+<c>              *get right area to remove top encap</c>
+<l>        area_center (Region_recpolygon, Area, Row, Column)</l>
+<l>        difference (RegionDilation1, Region_recpolygon, RegionDifference3)</l>
+<l>        connection (RegionDifference3, ConnectedRegions4)</l>
+<l>        select_shape (ConnectedRegions4, SelectedRegions_right, 'column', 'and', Column, Column+1000)</l>
+<l>        select_shape (ConnectedRegions4, SelectedRegions_left, 'column', 'and', 0, Column)</l>
+<l>        if (1)</l>
+<l>        reduce_domain(Image, SelectedRegions_right,ImageReduced)</l>
+<c>        *tracing top encap</c>
+<l>*             sobel_amp(ImageReduced, EdgeAmplitude, 'sum_abs', 5)</l>
+<l>            deviation_image(ImageReduced,ImageDeviation,7, 7)</l>
+<l>*             mean_image(ImageReduced, ImageMean, 9, 9)</l>
+<l>            threshold(ImageDeviation, Region1, 30, 255)</l>
+<l>*             var_threshold(ImageDeviation, Region, 50, 1, 0.2, 30, 'light')</l>
+<l>            difference(Region1, Region_recpolygon, RegionDifference1)</l>
+<l>            closing_rectangle1(RegionDifference1, RegionClosing1, 5, 1)</l>
+<l>            connection(RegionClosing1, ConnectedRegions3)     </l>
+<l>            select_shape (ConnectedRegions3, SelectedRegions3, 'height', 'and', 100, 99999)</l>
+<c>    </c>
+<c>            * gen region dont remove</c>
+<l>            union1 (SelectedRegions3, RegionUnion1)</l>
+<l>            shape_trans (RegionUnion1, RegionTrans, 'rectangle1')</l>
+<l>            dilation_rectangle1 (RegionTrans, RegionDilation2, 20, 1)</l>
+<c>            *gen region remove</c>
+<l>            difference (SelectedRegions_right, RegionDilation2, RegionDifference4)</l>
+<l>            dilation_rectangle1 (RegionDifference4, RegionDilation3, 1, 50)</l>
+<l>            difference (SelectedRegions_right, RegionDilation3, SelectedRegions_right)</l>
+<l>        endif</l>
+<c>        </c>
+<c>        * inspection </c>
+<c>     </c>
+<c>*    RegionUnion</c>
+<c>*    SelectedRegions_left</c>
+<c>*        SelectedRegions_right</c>
+<l>        union2 (SelectedRegions_right, RegionUnion, RegionUnion2)</l>
+<l>    union2 (RegionUnion2, SelectedRegions_left, RegionUnion_left_right)</l>
+<c>   </c>
+<l>    reduce_domain (Image, RegionUnion_left_right, ImageReduced_left_right)</l>
+<l>*    reduce_domain (Image, SelectedRegions_left, ImageReduced_left_inspect)</l>
+<l>    reduce_domain (Image, RegionUnion, ImageReduced_mid)</l>
+<c>    </c>
+<l>    gray_histo (RegionUnion_left_right, ImageReduced_left_right, AbsoluteHisto, RelativeHisto)</l>
+<l>    histo_to_thresh (AbsoluteHisto, 2, MinThresh, MaxThresh)</l>
+<c>    </c>
+<l>    dev_clear_window ()</l>
+<l>    mul := 255/(255- MaxThresh[0])</l>
+<l>    add := -MaxThresh[0]*mul</l>
+<c>     *remove black</c>
+<l>    scale_image (ImageReduced_left_right, ImageScaled, mul,add)</l>
+<l>*     var_threshold (ImageScaled, Region, 1, 5, 0.2, 50, 'not_equal')</l>
+<l>*     deviation_image (ImageScaled, ImageDeviation1,3, 3)</l>
+<l>*     sobel_amp (ImageScaled, EdgeAmplitude, 'sum_abs', 3)</l>
+<c></c>
+<c>    </c>
+<c>    *Get white region near edge</c>
+<l>    mean_image (ImageReduced_left_right, ImageMean, 3, 3)</l>
+<l>*     var_threshold (ImageMean, Region_var, 15, 15, 0.2, 100, 'light')</l>
+<l>    hysteresis_threshold (ImageScaled, RegionHysteresis1, 150, 200, 5)</l>
+<l>    threshold (ImageMean, Region_white_high, 130, 255)</l>
+<l>*     threshold (ImageScaled, Region_white_high, 120, 255)</l>
+<l>    connection (RegionHysteresis1, ConnectedRegions5)</l>
+<l>    area_center (SelectedRegions_left, Area1, Row_left, Column_left)</l>
+<l>    area_center (SelectedRegions_right, Area2, Row_right, Column_right)</l>
+<l>    select_shape (ConnectedRegions5, SelectedRegions_center_left, 'column1', 'and', Column_left + Expand_Value/6 , Column_right - Expand_Value/6)</l>
+<l>    select_shape (ConnectedRegions5, SelectedRegions_center_right, 'column2', 'and', Column_left + Expand_Value/6 , Column_right - Expand_Value/6)</l>
+<l>    union2 (SelectedRegions_center_left, SelectedRegions_center_right, RegionUnion_White_LR)</l>
+<l>    gen_rectangle2 (Rectangle_connect_white, Row_current, Column_current, -shift_angle, 2, 5)</l>
+<l>    closing (RegionUnion_White_LR, Rectangle_connect_white, RegionClosing_strong_white)</l>
+<c>    </c>
+<c>    * Get Smooth region </c>
+<c>  </c>
+<l>*     deviation_image (ImageScaled, ImageDeviation1,3, 5)</l>
+<l>*     emphasize (ImageDeviation1, ImageEmphasize, 7, 7, 3)</l>
+<l>*     var_threshold (ImageScaled, Region, 1, 5, 0.2, 14, 'not_equal')</l>
+<l>*     mean_image (ImageScaled, ImageMean2, 5, 5)</l>
+<l>*     threshold (ImageMean2, Region_white, 41, 255)</l>
+<l>*     threshold (ImageScaled, Region_white, 41, 255)</l>
+<l>    hysteresis_threshold (ImageReduced_left_right, RegionHysteresis1, 120, 150, 5)</l>
+<c></c>
+<l>    fill_up (RegionHysteresis1, RegionFillUp)</l>
+<l>    height_remove := 15</l>
+<l>    gen_rectangle2 (Rectangle1,0, 0, -shift_angle, Expand_Value/5 , height_remove)</l>
+<l>    opening (RegionFillUp, Rectangle1, RegionOpening1)</l>
+<l>    connection (RegionOpening1, ConnectedRegions)</l>
+<l>    select_shape (ConnectedRegions, SelectedRegions, 'height', 'and',2*height_remove, 99999)</l>
+<c>    </c>
+<c>    </c>
+<c>    </c>
+<c>    </c>
+<c>    *</c>
+<l>*     opening_circle (Region_black, RegionOpening1, 5)</l>
+<l>*     opening_rectangle1 (RegionOpening1, RegionOpening, 3, 50)</l>
+<l>*     connection (RegionOpening, ConnectedRegions)</l>
+<l>*     select_shape (ConnectedRegions, SelectedRegions, 'area', 'and', 3500, 9999999)</l>
+<l>*     union1 (SelectedRegions, RegionUnion_black)</l>
+<l>*     dev_clear_window ()</l>
+<l>*     boundary (RegionUnion_black, RegionBorder, 'inner')</l>
+<l>*     reduce_domain (ImageReduced_sliver, RegionUnion_black, ImageReduced_black)</l>
+<l>*     lines_gauss (ImageReduced_black, Lines1, 1.5, 3, 8, 'light', 'true', 'bar-shaped', 'true')</l>
+<c>    *Remve White</c>
+<c></c>
+<l>*      threshold (ImageReduced_black, Region_white, 200, 255)</l>
+<l>*      threshold_sub_pix (ImageReduced_black, Border, 120)</l>
+<l>*      edges_sub_pix (ImageReduced_black, Edges1, 'canny', 1, 20, 40)</l>
+<l>*      dilation_rectangle1 (Region_white, RegionDilation, 5, 1)</l>
+<l>*      difference (RegionUnion_black, RegionDilation, RegionDifference) </l>
+<l>*      reduce_domain (Image, RegionDifference, ImageReduced_whiteblack)</l>
+<l>*      lines_gauss (ImageReduced_whiteblack, Lines2, 1.5, 3, 8, 'light', 'true', 'bar-shaped', 'true')  </l>
+<l>*      dev_clear_window ()</l>
+<l>*      dev_display (Image)   </l>
+<l>*      dev_display (RegionBorder)</l>
+<c>     *</c>
+<l>     dev_clear_window ()</l>
+<l>     dev_display (Image)</l>
+<l>     dev_set_color ('red')</l>
+<l>     dev_display (SelectedRegions)</l>
+<l>     dev_set_color ('green')</l>
+<l>     dev_display (RegionClosing_strong_white)</l>
+<l>     stop()        </l>
+<c>        * remove bottom</c>
+<l>     endif</l>
+<l>return ()</l>
+</body>
+<docu id="Adhesive_inspect">
+<parameters>
+<parameter id="AbsoluteHisto"/>
+<parameter id="Area"/>
+<parameter id="Area1"/>
+<parameter id="Area2"/>
+<parameter id="Circle"/>
+<parameter id="Colss"/>
+<parameter id="Column"/>
+<parameter id="Column1"/>
+<parameter id="Column2"/>
+<parameter id="Column3"/>
+<parameter id="Column4"/>
+<parameter id="Column_current"/>
+<parameter id="Column_left"/>
+<parameter id="Column_right"/>
+<parameter id="Columnsg"/>
+<parameter id="ConnectedRegions"/>
+<parameter id="ConnectedRegions1"/>
+<parameter id="ConnectedRegions2"/>
+<parameter id="ConnectedRegions3"/>
+<parameter id="ConnectedRegions4"/>
+<parameter id="ConnectedRegions5"/>
+<parameter id="Contour_recpo"/>
+<parameter id="Expand_Value"/>
+<parameter id="Image"/>
+<parameter id="ImageDeviation"/>
+<parameter id="ImageMean"/>
+<parameter id="ImageReduced"/>
+<parameter id="ImageReduced_left_right"/>
+<parameter id="ImageReduced_mid"/>
+<parameter id="ImageReduced_polygon"/>
+<parameter id="ImageReduced_sliver"/>
+<parameter id="ImageReduced_sliver_crop"/>
+<parameter id="ImageScaled"/>
+<parameter id="IsOverlapping"/>
+<parameter id="MaxThresh"/>
+<parameter id="MinThresh"/>
+<parameter id="Number"/>
+<parameter id="ROI_rectangle_sliver"/>
+<parameter id="ROI_rectangle_sliver_cropbot"/>
+<parameter id="ROI_rectangle_sliver_croptop"/>
+<parameter id="Rectangle"/>
+<parameter id="Rectangle1"/>
+<parameter id="Rectangle2"/>
+<parameter id="Rectangle_connect_white"/>
+<parameter id="Rectangle_expand2"/>
+<parameter id="Rectangle_expand3"/>
+<parameter id="Region1"/>
+<parameter id="RegionAffineTrans"/>
+<parameter id="RegionClosing"/>
+<parameter id="RegionClosing1"/>
+<parameter id="RegionClosing_strong_white"/>
+<parameter id="RegionDifference"/>
+<parameter id="RegionDifference1"/>
+<parameter id="RegionDifference2"/>
+<parameter id="RegionDifference3"/>
+<parameter id="RegionDifference4"/>
+<parameter id="RegionDifference_sliver"/>
+<parameter id="RegionDilation1"/>
+<parameter id="RegionDilation2"/>
+<parameter id="RegionDilation3"/>
+<parameter id="RegionFillUp"/>
+<parameter id="RegionHysteresis"/>
+<parameter id="RegionHysteresis1"/>
+<parameter id="RegionOpening"/>
+<parameter id="RegionOpening1"/>
+<parameter id="RegionTrans"/>
+<parameter id="RegionTrans2"/>
+<parameter id="RegionTrans_rec"/>
+<parameter id="RegionUnion"/>
+<parameter id="RegionUnion1"/>
+<parameter id="RegionUnion2"/>
+<parameter id="RegionUnion_White_LR"/>
+<parameter id="RegionUnion_closing"/>
+<parameter id="RegionUnion_left_right"/>
+<parameter id="Region_recpolygon"/>
+<parameter id="Region_white_high"/>
+<parameter id="RelativeHisto"/>
+<parameter id="Row"/>
+<parameter id="Row1"/>
+<parameter id="Row2"/>
+<parameter id="Row3"/>
+<parameter id="Row4"/>
+<parameter id="Row_current"/>
+<parameter id="Row_left"/>
+<parameter id="Row_right"/>
+<parameter id="Rowsg"/>
+<parameter id="Rowss"/>
+<parameter id="SelectedRegions"/>
+<parameter id="SelectedRegions1"/>
+<parameter id="SelectedRegions3"/>
+<parameter id="SelectedRegions_center_left"/>
+<parameter id="SelectedRegions_center_right"/>
+<parameter id="SelectedRegions_closing"/>
+<parameter id="SelectedRegions_left"/>
+<parameter id="SelectedRegions_right"/>
+<parameter id="ThreshRegion_poly_crop"/>
+<parameter id="add"/>
+<parameter id="height_remove"/>
+<parameter id="mul"/>
+<parameter id="shift_angle"/>
+<parameter id="shift_column"/>
+<parameter id="shift_row"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="_FCI_ChickletSwageHole_Roundness">
+<interface>
+<io>
+<par name="HoleROI" base_type="iconic" dimension="0"/>
+<par name="InspectImage" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="BurrRegion" base_type="iconic" dimension="0"/>
+<par name="HoleLocation" base_type="iconic" dimension="0"/>
+<par name="DebugImageOut" base_type="iconic" dimension="0"/>
+<par name="DebugRegionOut" base_type="iconic" dimension="0"/>
+</oo>
+<ic>
+<par name="IsStepMode" base_type="ctrl" dimension="0"/>
+<par name="HoleOffset" base_type="ctrl" dimension="0"/>
+<par name="MinContrast" base_type="ctrl" dimension="0"/>
+<par name="MaxContrast" base_type="ctrl" dimension="0"/>
+<par name="RadiusInit" base_type="ctrl" dimension="0"/>
+<par name="RoundnessIn" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="IsBurr" base_type="ctrl" dimension="0"/>
+<par name="Roundness" base_type="ctrl" dimension="0"/>
+<par name="RadiusOut" base_type="ctrl" dimension="0"/>
+<par name="DebugMessageOut" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<c>***Debug Parameter</c>
+<l>gen_empty_obj (DebugImageOut)</l>
+<l>gen_empty_obj (DebugRegionOut)</l>
+<l>DebugMessageOut :=  []</l>
+<c></c>
+<l>IsBurr := false</l>
+<l>Roundness := 0</l>
+<l>RadiusOut := 0</l>
+<l>reduce_domain (InspectImage, HoleROI, ImageReduced)</l>
+<l>gray_histo (HoleROI, InspectImage, AbsoluteHisto, RelativeHisto)</l>
+<l>histo_to_thresh (AbsoluteHisto, 1, MinHis, MaxHis)</l>
+<l>tuple_length (MinHis, Length)</l>
+<l>if (Length &lt;2)</l>
+<l>    IsBurr := true</l>
+<l>    return()</l>
+<l>endif</l>
+<c></c>
+<c>* Sobel and Thresh</c>
+<l>sobel_amp (ImageReduced, EdgeAmplitude, 'sum_abs', 3)</l>
+<l>emphasize (EdgeAmplitude, ImageEmphasize, 7, 7, 7)</l>
+<l>gauss_filter (ImageEmphasize, ImageGauss, 5)</l>
+<l>threshold (ImageGauss, Region1, MinContrast, MaxContrast)</l>
+<l>closing_circle (Region1, RegionClosing, 5.5)</l>
+<l>difference (HoleROI, RegionClosing, RegionDifference)</l>
+<l>connection (RegionDifference, ConnectedRegions)</l>
+<c></c>
+<l>if (IsStepMode)</l>
+<l>     Message:=[' Threshold area ']</l>
+<l>     _FCI_DebugParameters (InspectImage, ConnectedRegions, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l> endif</l>
+<c></c>
+<c> *Select Shape</c>
+<l>HoleArea := RadiusInit * RadiusInit * 3.14159</l>
+<l>select_shape (ConnectedRegions, SelectedRegions1, 'area', 'and', 0.6 * HoleArea, 3 * HoleArea)</l>
+<l>count_obj (SelectedRegions1, Number)</l>
+<l>fill_up (SelectedRegions1, RegionFillUp)</l>
+<l>opening_circle (RegionFillUp, RegionOpening, 3.5)</l>
+<c></c>
+<c>* If have 1 region</c>
+<l>if ( Number =1)</l>
+<l>    region_features (RegionFillUp, 'roundness', Roundness)</l>
+<l>    gen_contour_region_xld (RegionOpening, Contours_bounday, 'border')</l>
+<l>    fit_circle_contour_xld (Contours_bounday, 'atukey', -1, 0, 0, 31, 2, Row_current, Column_current, RadiusOut, StartPhi, EndPhi, PointOrder)</l>
+<l>    gen_circle (Circle, Row_current, Column_current, RadiusOut)</l>
+<l>*     connection (Circle, ConnectedRegions1)</l>
+<l>    select_shape (Circle, SelectedRegions, 'area', 'and', 0.6 * HoleArea, 2 * HoleArea)</l>
+<l>    gen_circle(CircleOffset1, Row_current, Column_current, (1+ HoleOffset/1000) * RadiusOut )</l>
+<l>    gen_circle(CircleOffset2, Row_current, Column_current, (1- HoleOffset/1000) * RadiusOut )</l>
+<c>    </c>
+<l>    difference (RegionFillUp, CircleOffset1, RegionDifference1)  </l>
+<l>    difference (CircleOffset2, RegionFillUp, RegionDifference2) </l>
+<l>    union2 (RegionDifference1, RegionDifference2, RegionUnion1)</l>
+<l>    opening_circle (RegionUnion1, RegionOpening1, 1.5)</l>
+<l>    region_features (RegionDifference2, 'area', Value)</l>
+<l>    BurrRegion := RegionOpening1</l>
+<l>    HoleLocation := SelectedRegions</l>
+<l>    if ( Roundness &lt; RoundnessIn)</l>
+<l>        IsBurr := true</l>
+<l>    endif</l>
+<l>     if (IsStepMode)</l>
+<l>        Message:=[' Hole Location '+ Roundness]</l>
+<l>        _FCI_DebugParameters (InspectImage, RegionOpening1, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>    endif</l>
+<c></c>
+<l>elseif (Number &gt;1)</l>
+<l>    union1 (SelectedRegions1, HoleLocation)</l>
+<l>       if (IsStepMode)</l>
+<l>        Message:=['Region Error']</l>
+<l>        _FCI_DebugParameters (InspectImage, HoleLocation, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>       endif  </l>
+<l>       IsBurr := true</l>
+<l>else </l>
+<l>    IsBurr := true </l>
+<l>endif</l>
+<c></c>
+<l>return ()</l>
+<c></c>
+</body>
+<docu id="_FCI_ChickletSwageHole_Roundness">
+<parameters>
+<parameter id="BurrRegion"/>
+<parameter id="DebugImageOut"/>
+<parameter id="DebugMessageOut"/>
+<parameter id="DebugRegionOut"/>
+<parameter id="HoleLocation"/>
+<parameter id="HoleOffset"/>
+<parameter id="HoleROI"/>
+<parameter id="InspectImage"/>
+<parameter id="IsBurr"/>
+<parameter id="IsStepMode"/>
+<parameter id="MaxContrast"/>
+<parameter id="MinContrast"/>
+<parameter id="RadiusInit"/>
+<parameter id="RadiusOut"/>
+<parameter id="Roundness"/>
+<parameter id="RoundnessIn"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="_FCI_Sliver_Adhesive_Coverage_Inspection">
+<interface>
+<io>
+<par name="AdhesiveSliverROI" base_type="iconic" dimension="0"/>
+<par name="InspectionImage" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="SliverCoverageRegion" base_type="iconic" dimension="0"/>
+<par name="MidDieLocation" base_type="iconic" dimension="0"/>
+<par name="DebugImageOut" base_type="iconic" dimension="0"/>
+<par name="DebugRegionOut" base_type="iconic" dimension="0"/>
+<par name="DieSearchLocation" base_type="iconic" dimension="0"/>
+</oo>
+<ic>
+<par name="IsStepMode" base_type="ctrl" dimension="0"/>
+<par name="nDilationOffset" base_type="ctrl" dimension="0"/>
+<par name="nMinContrast" base_type="ctrl" dimension="0"/>
+<par name="nMaxContrast" base_type="ctrl" dimension="0"/>
+<par name="nShiftAngle" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="IsPass" base_type="ctrl" dimension="0"/>
+<par name="DebugMessageOut" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<c></c>
+<l>select_obj (AdhesiveSliverROI, AdhesivSliverROI, 1)</l>
+<l>select_obj (AdhesiveSliverROI, AdhesivSliverTopROI, 2)</l>
+<l>select_obj (AdhesiveSliverROI, AdhesivSliverBotROI, 3)</l>
+<c></c>
+<l>reduce_domain (InspectionImage, AdhesiveSliverROI, ImageReducedSliver)</l>
+<l>reduce_domain (InspectionImage, AdhesivSliverTopROI, ImageReducedSliverTop)</l>
+<l>reduce_domain (InspectionImage, AdhesivSliverBotROI, ImageReducedSliverBot)</l>
+<l>     dev_clear_window ()</l>
+<l>hysteresis_threshold (ImageReducedSliver, RegionHysteresis, nMinContrast, nMaxContrast, 35)</l>
+<l>     difference (AdhesiveSliverROI, RegionHysteresis, RegionDifference1)</l>
+<l>     gen_rectangle2 (Rectangle, 0, 0, -nShiftAngle, 1,20)</l>
+<l>     opening (RegionDifference1, Rectangle, RegionOpening1)</l>
+<l>     gen_rectangle2 (Rectangle2, 0, 0, -nShiftAngle, 5, 1)</l>
+<l>     closing (RegionOpening1, Rectangle2, RegionClosing1)</l>
+<l>     connection (RegionClosing1, ConnectedRegions1)</l>
+<l>     select_shape (ConnectedRegions1, SelectedRegions1, 'height', 'and', 500, 99999)</l>
+<l>     count_obj (SelectedRegions1, Number)</l>
+<l>     if (Number &gt;=1)</l>
+<l>        union1 (SelectedRegions1, RegionUnion1)</l>
+<l>        shape_trans (RegionUnion1, RegionTrans1, 'convex')</l>
+<l>        shape_trans (RegionTrans1, RegionTrans2, 'rectangle2')</l>
+<l>        get_region_polygon (RegionTrans2, 5, Rowsg, Columnsg)</l>
+<l>        intersection_lines (Rowsg[0], Columnsg[0], Rowsg[1], Columnsg[1], 0, 0, 0, 2048, Row1, Column1, IsOverlapping)</l>
+<l>*         gen_circle (Circle, Row1, Column1, 10)</l>
+<l>        intersection_lines (Rowsg[2], Columnsg[2], Rowsg[3], Columnsg[3], 0, 0, 0, 2048, Row2, Column2, IsOverlapping)</l>
+<c>        </c>
+<l>        intersection_lines (Rowsg[0], Columnsg[0], Rowsg[1], Columnsg[1], 2048, 0, 2048, 2048, Row3, Column3, IsOverlapping)</l>
+<l>        intersection_lines (Rowsg[2], Columnsg[2], Rowsg[3], Columnsg[3], 2048, 0, 2048, 2048, Row4, Column4, IsOverlapping)</l>
+<c>        </c>
+<l>        RowsPoly := [Row1,Row2,Row4,Row3,Row1]</l>
+<l>        ColsPoly :=  [Column1, Column2, Column4, Column3,Column1]</l>
+<l>        gen_contour_polygon_xld (ContourPoly, RowsPoly, ColsPoly)</l>
+<l>        gen_region_contour_xld (ContourPoly, RegionPoly, 'filled')</l>
+<l>        reduce_domain (InspectionImage, RegionPoly, ImageReducedPoly)</l>
+<c>        </c>
+<c>        * Remove top </c>
+<l>        if(1)</l>
+<l>            nMinThreshDieCrop := 170</l>
+<l>            nMaxThreshDieCrop := 255</l>
+<l>            ImageReduceCrop :=  ImageReducedSliverTop</l>
+<c>        * Remove bot</c>
+<l>        else</l>
+<l>            nMinThreshDieCrop := 0</l>
+<l>            nMaxThreshDieCrop := 30</l>
+<l>            ImageReduceCrop :=  ImageReducedSliverBot</l>
+<l>        endif   </l>
+<l>        threshold (ImageReduceCrop, ThreshRegionCrop, nMinThreshDieCrop, nMaxThreshDieCrop)</l>
+<l>        difference (AdhesivSliverBotROI, ThreshRegionCrop, RegionDifference2)</l>
+<l>        connection (RegionDifference2, ConnectedRegions2)</l>
+<l>        select_shape (ConnectedRegions2, SelectedRegions2, 'height', 'and', 800, 99999)</l>
+<l>        union1 (SelectedRegions1, RegionUnion2)  </l>
+<l>        gen_rectangle2 (RectangleOffset2, 0, 0, -nShiftAngle, nDilationOffset, 1)</l>
+<l>        dilation1 (RegionUnion2, RectangleOffset2, RegionDilation2, 1) </l>
+<c>    </c>
+<l>        dev_clear_window()</l>
+<l>        dev_display (InspectionImage)</l>
+<l>*        dev_set_draw ('margin')</l>
+<l>        dev_display (RegionUnion2)    </l>
+<c>        </c>
+<c>        *gen 3 area to inspection</c>
+<c>      </c>
+<c>        *get right area to remove top encap</c>
+<l>        area_center (RegionPoly, Area, Row, Column)</l>
+<l>        difference (RegionPoly, RegionDilation2, RegionDifference3)</l>
+<l>        connection (RegionDifference3, ConnectedRegions4)</l>
+<l>        select_shape (ConnectedRegions4, SelectedRegions_right, 'column', 'and', Column, Column+1000)</l>
+<l>        select_shape (ConnectedRegions4, SelectedRegions_left, 'column', 'and', 0, Column)</l>
+<l>        if (1)</l>
+<l>        reduce_domain(Image, SelectedRegions_right,ImageReduced)</l>
+<c>        *tracing top encap</c>
+<l>        deviation_image(ImageReduced,ImageDeviation,7, 7)</l>
+<l>        threshold(ImageDeviation, Region1, 30, 255)</l>
+<l>        difference(Region1, Region_recpolygon, RegionDifference1)</l>
+<l>        closing_rectangle1(RegionDifference1, RegionClosing1, 5, 1)</l>
+<l>        connection(RegionClosing1, ConnectedRegions3)     </l>
+<l>        select_shape (ConnectedRegions3, SelectedRegions3, 'height', 'and', 100, 99999)</l>
+<c>        </c>
+<c>        * gen region dont remove</c>
+<l>        union1 (SelectedRegions3, RegionUnion1)</l>
+<l>        shape_trans (RegionUnion1, RegionTrans, 'rectangle1')</l>
+<l>        dilation_rectangle1 (RegionTrans, RegionDilation2, 20, 1)</l>
+<c>        *gen region remove</c>
+<l>        difference (SelectedRegions_right, RegionDilation2, RegionDifference4)</l>
+<l>        dilation_rectangle1 (RegionDifference4, RegionDilation3, 1, 50)</l>
+<l>        difference (SelectedRegions_right, RegionDilation3, SelectedRegions_right)</l>
+<l>        endif</l>
+<c>        </c>
+<c>        * inspection </c>
+<c>     </c>
+<c>*    RegionUnion</c>
+<c>*    SelectedRegions_left</c>
+<c>*        SelectedRegions_right</c>
+<l>        union2 (SelectedRegions_right, RegionUnion, RegionUnion2)</l>
+<l>    union2 (RegionUnion2, SelectedRegions_left, RegionUnion_left_right)</l>
+<c>   </c>
+<l>    reduce_domain (Image, RegionUnion_left_right, ImageReduced_left_right)</l>
+<l>*    reduce_domain (Image, SelectedRegions_left, ImageReduced_left_inspect)</l>
+<l>    reduce_domain (Image, RegionUnion, ImageReduced_mid)</l>
+<c>    </c>
+<l>    gray_histo (RegionUnion_left_right, ImageReduced_left_right, AbsoluteHisto, RelativeHisto)</l>
+<l>    histo_to_thresh (AbsoluteHisto, 2, MinThresh, MaxThresh)</l>
+<c>    </c>
+<l>    dev_clear_window ()</l>
+<l>    mul := 255/(255- MaxThresh[0])</l>
+<l>    add := -MaxThresh[0]*mul</l>
+<c>     *remove black</c>
+<l>    scale_image (ImageReduced_left_right, ImageScaled, mul,add)</l>
+<l>*     var_threshold (ImageScaled, Region, 1, 5, 0.2, 50, 'not_equal')</l>
+<l>*     deviation_image (ImageScaled, ImageDeviation1,3, 3)</l>
+<l>*     sobel_amp (ImageScaled, EdgeAmplitude, 'sum_abs', 3)</l>
+<c></c>
+<c>    </c>
+<c>    *Get white region near edge</c>
+<l>    mean_image (ImageReduced_left_right, ImageMean, 3, 3)</l>
+<l>*     var_threshold (ImageMean, Region_var, 15, 15, 0.2, 100, 'light')</l>
+<l>    hysteresis_threshold (ImageScaled, RegionHysteresis1, 150, 200, 5)</l>
+<l>    threshold (ImageMean, Region_white_high, 130, 255)</l>
+<l>*     threshold (ImageScaled, Region_white_high, 120, 255)</l>
+<l>    connection (RegionHysteresis1, ConnectedRegions5)</l>
+<l>    area_center (SelectedRegions_left, Area1, Row_left, Column_left)</l>
+<l>    area_center (SelectedRegions_right, Area2, Row_right, Column_right)</l>
+<l>    select_shape (ConnectedRegions5, SelectedRegions_center_left, 'column1', 'and', Column_left + Expand_Value/6 , Column_right - Expand_Value/6)</l>
+<l>    select_shape (ConnectedRegions5, SelectedRegions_center_right, 'column2', 'and', Column_left + Expand_Value/6 , Column_right - Expand_Value/6)</l>
+<l>    union2 (SelectedRegions_center_left, SelectedRegions_center_right, RegionUnion_White_LR)</l>
+<l>    gen_rectangle2 (Rectangle_connect_white, Row_current, Column_current, -shift_angle, 2, 5)</l>
+<l>    closing (RegionUnion_White_LR, Rectangle_connect_white, RegionClosing_strong_white)</l>
+<c>    </c>
+<c>    * Get Smooth region </c>
+<c>  </c>
+<l>*     deviation_image (ImageScaled, ImageDeviation1,3, 5)</l>
+<l>*     emphasize (ImageDeviation1, ImageEmphasize, 7, 7, 3)</l>
+<l>*     var_threshold (ImageScaled, Region, 1, 5, 0.2, 14, 'not_equal')</l>
+<l>*     mean_image (ImageScaled, ImageMean2, 5, 5)</l>
+<l>*     threshold (ImageMean2, Region_white, 41, 255)</l>
+<l>*     threshold (ImageScaled, Region_white, 41, 255)</l>
+<l>    hysteresis_threshold (ImageReduced_left_right, RegionHysteresis1, 120, 150, 5)</l>
+<c></c>
+<l>    fill_up (RegionHysteresis1, RegionFillUp)</l>
+<l>    height_remove := 15</l>
+<l>    gen_rectangle2 (Rectangle1,0, 0, -shift_angle, Expand_Value/5 , height_remove)</l>
+<l>    opening (RegionFillUp, Rectangle1, RegionOpening1)</l>
+<l>    connection (RegionOpening1, ConnectedRegions)</l>
+<l>    select_shape (ConnectedRegions, SelectedRegions, 'height', 'and',2*height_remove, 99999)</l>
+<c>    </c>
+<c>    </c>
+<c>    </c>
+<c>    </c>
+<c>    *</c>
+<l>*     opening_circle (Region_black, RegionOpening1, 5)</l>
+<l>*     opening_rectangle1 (RegionOpening1, RegionOpening, 3, 50)</l>
+<l>*     connection (RegionOpening, ConnectedRegions)</l>
+<l>*     select_shape (ConnectedRegions, SelectedRegions, 'area', 'and', 3500, 9999999)</l>
+<l>*     union1 (SelectedRegions, RegionUnion_black)</l>
+<l>*     dev_clear_window ()</l>
+<l>*     boundary (RegionUnion_black, RegionBorder, 'inner')</l>
+<l>*     reduce_domain (ImageReduced_sliver, RegionUnion_black, ImageReduced_black)</l>
+<l>*     lines_gauss (ImageReduced_black, Lines1, 1.5, 3, 8, 'light', 'true', 'bar-shaped', 'true')</l>
+<c>    *Remve White</c>
+<c></c>
+<l>*      threshold (ImageReduced_black, Region_white, 200, 255)</l>
+<l>*      threshold_sub_pix (ImageReduced_black, Border, 120)</l>
+<l>*      edges_sub_pix (ImageReduced_black, Edges1, 'canny', 1, 20, 40)</l>
+<l>*      dilation_rectangle1 (Region_white, RegionDilation, 5, 1)</l>
+<l>*      difference (RegionUnion_black, RegionDilation, RegionDifference) </l>
+<l>*      reduce_domain (Image, RegionDifference, ImageReduced_whiteblack)</l>
+<l>*      lines_gauss (ImageReduced_whiteblack, Lines2, 1.5, 3, 8, 'light', 'true', 'bar-shaped', 'true')  </l>
+<l>*      dev_clear_window ()</l>
+<l>*      dev_display (Image)   </l>
+<l>*      dev_display (RegionBorder)</l>
+<c>     *</c>
+<l>     dev_clear_window ()</l>
+<l>     dev_display (Image)</l>
+<l>     dev_set_color ('red')</l>
+<l>     dev_display (SelectedRegions)</l>
+<l>     dev_set_color ('green')</l>
+<l>     dev_display (RegionClosing_strong_white)</l>
+<l>     stop()        </l>
+<c>        * remove bottom</c>
+<l>     endif</l>
+<l>return ()</l>
+<l>return ()</l>
+</body>
+<docu id="_FCI_Sliver_Adhesive_Coverage_Inspection">
+<parameters>
+<parameter id="AdhesiveSliverROI"/>
+<parameter id="DebugImageOut"/>
+<parameter id="DebugMessageOut"/>
+<parameter id="DebugRegionOut"/>
+<parameter id="DieSearchLocation"/>
+<parameter id="InspectionImage"/>
+<parameter id="IsPass"/>
+<parameter id="IsStepMode"/>
+<parameter id="MidDieLocation"/>
+<parameter id="SliverCoverageRegion"/>
+<parameter id="nDilationOffset"/>
+<parameter id="nMaxContrast"/>
+<parameter id="nMinContrast"/>
+<parameter id="nShiftAngle"/>
 </parameters>
 </docu>
 </procedure>
