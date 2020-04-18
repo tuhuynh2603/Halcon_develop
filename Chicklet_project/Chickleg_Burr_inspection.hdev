@@ -37,31 +37,30 @@
 <l>    shift_angle := nShiftAngle - Angle_first</l>
 <l>    shift_row := Row_current -Row_first</l>
 <l>    shift_column := Column_current - Column_first</l>
-<c></c>
-<l>*     Homo_trans (ROI_0, Image, ImageReduced_sliver, RegionAffineTrans, shift_angle, shift_row, shift_column)  </l>
-<l>*         _FCI_ChickletSwageHole_Roundness (RegionAffineTrans, Image, BurrRegion, HoleLocation, DebugImageOut, DebugRegionOut, 1, 0.01, 20, 255, 100, 0.93, IsBurr, Roundness, RadiusOut, DebugMessageOut)         </l>
+<l>    nBurrValueDefect := 200</l>
+<l>     Homo_trans (ROI_rectangle_circle, Image, ImageReduced_sliver, RegionAffineTrans, shift_angle, shift_row, shift_column)  </l>
+<l>        _FCI_ChickletSwageHole_Roundness (RegionAffineTrans, Image, BurrRegion, HoleLocation, DebugImageOut, DebugRegionOut, 0,nBurrValueDefect, 10, 50, 100, 0.93, IsBurr, Roundness, RadiusOut, DebugMessageOut)</l>
 <c>   </c>
 <c>    </c>
-<c>    </c>
-<l>   Homo_trans (AdhesivSliverROI, Image, ImageReduced_sliver, AdhesivSliverROITrans, nShiftAngle, shift_row, shift_column)  </l>
-<l>   Homo_trans (AdhesivSliverTopROI, Image, ImageReduced_sliver, AdhesivSliverTopROITrans, nShiftAngle, shift_row, shift_column)  </l>
-<l>   Homo_trans (AdhesivSliverBotROI, Image, ImageReduced_sliver, AdhesivSliverBotROITrans, nShiftAngle, shift_row, shift_column)  </l>
 <c></c>
-<l>   nMinThresh := 60</l>
+<l>*    Homo_trans (AdhesivSliverROI, Image, ImageReduced_sliver, AdhesivSliverROITrans, nShiftAngle, shift_row, shift_column)  </l>
+<l>*    Homo_trans (AdhesivSliverTopROI, Image, ImageReduced_sliver, AdhesivSliverTopROITrans, nShiftAngle, shift_row, shift_column)  </l>
+<l>*    Homo_trans (AdhesivSliverBotROI, Image, ImageReduced_sliver, AdhesivSliverBotROITrans, nShiftAngle, shift_row, shift_column)  </l>
+<c></c>
+<l>   nMinThresh := 60 </l>
 <l>   nMaxThresh := 95</l>
 <l>   IsStepDebug :=0</l>
 <l>   nDieOffset := 20 </l>
 <c>   </c>
-<l>   concat_obj (AdhesivSliverROITrans, AdhesivSliverTopROITrans, ObjectsConcat)</l>
-<l>   concat_obj (ObjectsConcat, AdhesivSliverBotROITrans, ASliverBotROIProjection)</l>
-<l>        _FCI_Sliver_Adhesive_Coverage_Inspection (ASliverBotROIProjection, Image, SliverCoverageRegion, MidDieLocation, DebugImageOut, DebugRegionOut, DieSearchLocation, IsStepDebug, nDieOffset, nMinThresh, nMaxThresh, nShiftAngle, IsPass, DebugMessageOut)</l>
+<l>*    concat_obj (AdhesivSliverROITrans, AdhesivSliverTopROITrans, ObjectsConcat)</l>
+<l>*    concat_obj (ObjectsConcat, AdhesivSliverBotROITrans, ASliverBotROIProjection)</l>
+<l>*         _FCI_Sliver_Adhesive_Coverage_Inspection (ASliverBotROIProjection, Image, SliverCoverageRegion, MidDieLocation, DebugImageOut, DebugRegionOut, DieSearchLocation, IsStepDebug, nDieOffset, nMinThresh, nMaxThresh, nShiftAngle, IsPass, DebugMessageOut)</l>
 <c></c>
 <l>*     catch (Exception)</l>
 <l>*     endtry</l>
 <c>    </c>
 <c>    </c>
-<c>    </c>
-<c>    </c>
+<c></c>
 <c>    </c>
 <c>    </c>
 <l>endfor</l>
@@ -940,7 +939,7 @@
 </oo>
 <ic>
 <par name="IsStepMode" base_type="ctrl" dimension="0"/>
-<par name="HoleOffset" base_type="ctrl" dimension="0"/>
+<par name="nBurrValueDefect" base_type="ctrl" dimension="0"/>
 <par name="MinContrast" base_type="ctrl" dimension="0"/>
 <par name="MaxContrast" base_type="ctrl" dimension="0"/>
 <par name="RadiusInit" base_type="ctrl" dimension="0"/>
@@ -957,8 +956,9 @@
 <c>***Debug Parameter</c>
 <l>gen_empty_obj (DebugImageOut)</l>
 <l>gen_empty_obj (DebugRegionOut)</l>
+<l>gen_empty_obj (HoleLocation)</l>
+<l>gen_empty_obj(BurrRegion)</l>
 <l>DebugMessageOut :=  []</l>
-<c></c>
 <l>IsBurr := false</l>
 <l>Roundness := 0</l>
 <l>RadiusOut := 0</l>
@@ -970,15 +970,15 @@
 <l>    IsBurr := true</l>
 <l>    return()</l>
 <l>endif</l>
-<c></c>
 <c>* Sobel and Thresh</c>
-<l>sobel_amp (ImageReduced, EdgeAmplitude, 'sum_abs', 3)</l>
-<l>emphasize (EdgeAmplitude, ImageEmphasize, 7, 7, 7)</l>
-<l>gauss_filter (ImageEmphasize, ImageGauss, 5)</l>
-<l>threshold (ImageGauss, Region1, MinContrast, MaxContrast)</l>
-<l>closing_circle (Region1, RegionClosing, 5.5)</l>
-<l>difference (HoleROI, RegionClosing, RegionDifference)</l>
-<l>connection (RegionDifference, ConnectedRegions)</l>
+<l>sobel_amp (ImageReduced, EdgeAmplitude, 'thin_sum_abs',3)</l>
+<l>emphasize (EdgeAmplitude, ImageEmphasize, 7, 7, 5)</l>
+<l>add_image (ImageEmphasize, ImageReduced, ImageResult, 0.5, 0)</l>
+<l>threshold (ImageResult, Region1,0, MaxContrast)</l>
+<l>fill_up (Region1, RegionFillUp1)</l>
+<l>opening_circle (RegionFillUp1, RegionOpening2, 3.5)</l>
+<l>set_system('neighborhood',4)</l>
+<l>connection (RegionFillUp1, ConnectedRegions)</l>
 <c></c>
 <l>if (IsStepMode)</l>
 <l>     Message:=[' Threshold area ']</l>
@@ -987,41 +987,116 @@
 <c></c>
 <c> *Select Shape</c>
 <l>HoleArea := RadiusInit * RadiusInit * 3.14159</l>
-<l>select_shape (ConnectedRegions, SelectedRegions1, 'area', 'and', 0.6 * HoleArea, 3 * HoleArea)</l>
+<l>select_shape (ConnectedRegions, SelectedRegions1, 'area', 'and', 0.3 * HoleArea, 4* HoleArea)</l>
 <l>count_obj (SelectedRegions1, Number)</l>
 <l>fill_up (SelectedRegions1, RegionFillUp)</l>
-<l>opening_circle (RegionFillUp, RegionOpening, 3.5)</l>
-<c></c>
 <c>* If have 1 region</c>
 <l>if ( Number =1)</l>
-<l>    region_features (RegionFillUp, 'roundness', Roundness)</l>
-<l>    gen_contour_region_xld (RegionOpening, Contours_bounday, 'border')</l>
-<l>    fit_circle_contour_xld (Contours_bounday, 'atukey', -1, 0, 0, 31, 2, Row_current, Column_current, RadiusOut, StartPhi, EndPhi, PointOrder)</l>
+<l>    opening_circle (RegionFillUp, RegionOpening, 3.5)</l>
+<l>    gen_contour_region_xld (RegionOpening, ContoursFillup, 'center')</l>
+<l>    fit_circle_contour_xld (ContoursFillup, 'atukey', -1, 0, 0, 31, 2, Row_current, Column_current, RadiusOut, StartPhi, EndPhi, PointOrder)</l>
 <l>    gen_circle (Circle, Row_current, Column_current, RadiusOut)</l>
-<l>*     connection (Circle, ConnectedRegions1)</l>
-<l>    select_shape (Circle, SelectedRegions, 'area', 'and', 0.6 * HoleArea, 2 * HoleArea)</l>
-<l>    gen_circle(CircleOffset1, Row_current, Column_current, (1+ HoleOffset/1000) * RadiusOut )</l>
-<l>    gen_circle(CircleOffset2, Row_current, Column_current, (1- HoleOffset/1000) * RadiusOut )</l>
-<c>    </c>
-<l>    difference (RegionFillUp, CircleOffset1, RegionDifference1)  </l>
-<l>    difference (CircleOffset2, RegionFillUp, RegionDifference2) </l>
-<l>    union2 (RegionDifference1, RegionDifference2, RegionUnion1)</l>
-<l>    opening_circle (RegionUnion1, RegionOpening1, 1.5)</l>
-<l>    region_features (RegionDifference2, 'area', Value)</l>
-<l>    BurrRegion := RegionOpening1</l>
-<l>    HoleLocation := SelectedRegions</l>
-<l>    if ( Roundness &lt; RoundnessIn)</l>
+<l>    select_shape (Circle, SelectedRegions, 'area', 'and', 0.3 * HoleArea, 4* HoleArea)</l>
+<l>    count_obj (SelectedRegions, Number1)</l>
+<l>    if( Number1 &lt;1 or Number1&gt;1)</l>
 <l>        IsBurr := true</l>
-<l>    endif</l>
-<l>     if (IsStepMode)</l>
-<l>        Message:=[' Hole Location '+ Roundness]</l>
-<l>        _FCI_DebugParameters (InspectImage, RegionOpening1, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
-<l>    endif</l>
+<l>    else</l>
+<l>            if (IsStepMode)</l>
+<l>                Message:=[' Hole region after remove ground region 1, Number Region = '+ Number1]</l>
+<l>                _FCI_DebugParameters (InspectImage, RegionFillUp, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>            endif  </l>
+<c>        * find ground region</c>
+<l>         difference (HoleROI, SelectedRegions, RegionDifference3)</l>
+<l>        reduce_domain (InspectImage, RegionDifference3, ImageReducedGround)</l>
+<l>        gray_features (SelectedRegions, InspectImage, 'mean', nGroundGrayValue)</l>
+<l>        threshold (ImageReducedGround, RegionMissGround, nGroundGrayValue+MinContrast,255)</l>
+<c>        * Remove ground region outsize fit circle</c>
+<l>        intersection (RegionFillUp, RegionMissGround, RegionIntersection)</l>
+<l>        difference (RegionFillUp, RegionIntersection, RegionDifferenceGood)</l>
+<l>        connection (RegionDifferenceGood, ConnectedRegionsGood)</l>
+<l>        select_shape (ConnectedRegionsGood, SelectedRegionsGood, 'area', 'and',  0.3 * HoleArea, 4* HoleArea)</l>
+<c>    </c>
+<l>        count_obj (SelectedRegionsGood, Number2)</l>
+<l>        if( Number2 &lt;1 or Number2&gt;1)</l>
+<l>            IsBurr := true</l>
+<l>        else</l>
+<l>            region_features (SelectedRegionsGood, 'roundness', Roundness)</l>
+<c>            </c>
+<l>            if (IsStepMode)</l>
+<l>                Message:=[' Ground region near fit circle']</l>
+<l>                _FCI_DebugParameters (InspectImage, RegionIntersection, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>            endif</l>
+<c>            * Gen Fit circle </c>
+<l>            gen_contour_region_xld (SelectedRegionsGood, ContoursGood, 'center')</l>
+<l>            fit_circle_contour_xld (ContoursGood, 'atukey', -1, 0, 0, 31, 2, Row_current, Column_current, RadiusOut, StartPhi, EndPhi, PointOrder)</l>
+<l>            gen_circle (CircleGood, Row_current, Column_current, RadiusOut)</l>
+<l>            select_shape (CircleGood, SelectedCircleGood, 'area', 'and', 0.3 * HoleArea, 4* HoleArea)</l>
+<l>            count_obj (SelectedCircleGood, Number3)</l>
+<l>            if( Number3 &lt;1 or Number3 &gt; 1)</l>
+<l>                IsBurr := true</l>
+<l>            else</l>
+<l>                if (IsStepMode)</l>
 <c></c>
+<l>                    Message:=[' Hole region after remove ground region 2']</l>
+<l>                    _FCI_DebugParameters (InspectImage, SelectedRegionsGood, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>                endif</l>
+<c>                * Get Burr Region</c>
+<l>                dilation_circle (SelectedCircleGood, RegionDilation, 1.5)</l>
+<c>                </c>
+<l>                erosion_circle (SelectedCircleGood, RegionErosion, 1.5)</l>
+<l>                difference (SelectedRegionsGood, RegionErosion, RegionDifference1)  </l>
+<l>                difference (SelectedCircleGood, SelectedRegionsGood, RegionDifference2) </l>
+<c>            </c>
+<l>                union2 (RegionDifference1, RegionDifference2, RegionUnion1)</l>
+<l>                connection (RegionUnion1, ConnectedRegions)</l>
+<l>                select_shape (ConnectedRegions, SelectedRegionsBurr, 'area', 'and', 2, 9999999)</l>
+<l>                count_obj (SelectedRegionsBurr, Number5)</l>
+<l>                if (Number5&gt;0)</l>
+<l>                    if (IsStepMode)</l>
+<l>                        Message:=[' All Burr regions ']</l>
+<l>                        _FCI_DebugParameters (InspectImage, SelectedRegionsBurr, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>                    endif</l>
+<l>                    count_obj (SelectedRegionsBurr, Number4)</l>
+<c>                    *Polar trans to get Height Value </c>
+<l>                    if(Number4 &gt;0)</l>
+<l>                        polar_trans_region (SelectedRegionsBurr, PolarTransRegion, Row_current, Column_current, 0, 6.28319, 0, RadiusOut+10, RadiusOut*2*3.14159, RadiusOut, 'nearest_neighbor') </l>
+<l>                        boundary (SelectedCircleGood, RegionBorder, 'inner')</l>
+<l>                        polar_trans_region (SelectedRegionsBurr, PolarTransRegion, Row_current, Column_current, 0, 6.28319, 0, RadiusOut+10, RadiusOut*2*3.14159, RadiusOut, 'nearest_neighbor') </l>
+<c>                        </c>
+<l>                        region_features (SelectedRegionsBurr, 'area', Value1)</l>
+<l>                        region_features (PolarTransRegion, 'height', Value2)</l>
+<l>                        tuple_mult (Value1, Value2, BurrValue)</l>
+<l>                        tuple_length (BurrValue, Length1)</l>
+<l>                        gen_empty_region (BurrRegion)</l>
+<l>                        for index:= 0 to Length1-1 by 1</l>
+<l>                            get_region_points (PolarTransRegion, Rows, Columns)</l>
+<l>                            if (BurrValue[index] &gt; nBurrValueDefect)</l>
+<l>                                select_obj (SelectedRegionsBurr, BurrSelected, index+1)</l>
+<l>*                                 concat_obj (BurrRegion, BurrSelected, BurrRegion)</l>
+<l>                            endif</l>
+<l>                        endfor</l>
+<l>                    endif</l>
+<c>                </c>
+<l>                    count_obj (BurrRegion, NumberBurrRegion)</l>
+<l>                    if( NumberBurrRegion&gt;1)</l>
+<l>                        IsBurr := true</l>
+<l>                    endif</l>
+<c>                    </c>
+<l>                    if (IsStepMode)</l>
+<l>                        Message:=[' Found Burr regions, Roundness =  '+ Roundness*100.0 + '%']</l>
+<l>                        _FCI_DebugParameters (InspectImage, BurrRegion, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>                    endif</l>
+<l>                endif</l>
+<l>                if ( Roundness*100 &lt; RoundnessIn )</l>
+<l>                    IsBurr := true</l>
+<l>                endif</l>
+<l>            endif</l>
+<l>        endif</l>
+<l>    endif</l>
 <l>elseif (Number &gt;1)</l>
 <l>    union1 (SelectedRegions1, HoleLocation)</l>
 <l>       if (IsStepMode)</l>
-<l>        Message:=['Region Error']</l>
+<l>        Message:=[' Chicklet Holes Region Error']</l>
 <l>        _FCI_DebugParameters (InspectImage, HoleLocation, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
 <l>       endif  </l>
 <l>       IsBurr := true</l>
@@ -1039,7 +1114,6 @@
 <parameter id="DebugMessageOut"/>
 <parameter id="DebugRegionOut"/>
 <parameter id="HoleLocation"/>
-<parameter id="HoleOffset"/>
 <parameter id="HoleROI"/>
 <parameter id="InspectImage"/>
 <parameter id="IsBurr"/>
@@ -1050,6 +1124,7 @@
 <parameter id="RadiusOut"/>
 <parameter id="Roundness"/>
 <parameter id="RoundnessIn"/>
+<parameter id="nBurrValueDefect"/>
 </parameters>
 </docu>
 </procedure>
