@@ -1,0 +1,436 @@
+* Initial setting
+IsStepMode := false
+* Close window
+dev_close_window()
+dev_open_window (0, 0, 800, 800, 'black', WindowHandle)
+dev_set_draw ('margin')
+dev_set_line_width (3)
+
+* Read reference image
+dev_open_file_dialog ('read_image', 'default', 'default', RefImageDir)
+read_image (ReferenceImage, RefImageDir)
+
+disp_continue_message (WindowHandle, 'black', 'true')
+stop()
+
+* Get size of image
+get_image_size (ReferenceImage, WidthImage, HeightImage)
+
+* Teach Device Patterns
+gen_rectangle1 (PatternROI1, 430.86, 315.66, 599.82, 484.62)
+gen_rectangle1 (PatternROI2, 425.74, 1475.34, 587.02, 1636.62)
+union2 (PatternROI1, PatternROI2, PatternROI)
+
+area_center (PatternROI, Area, ReferenceRow, ReferenceColumn)
+ReferenceAngle := 0
+
+* Create Pattern Search ROI
+gen_rectangle1 (SearchPatternROI, 246.54, 90.38, 930.06, 1874.7)
+
+* Create Encap Extract ROI
+gen_contour_polygon_xld (PolygonEncapExtractROI, [656.535,623.955,611.285,611.285,620.335,652.915,1595.93,1595.93,656.535], [1411.73,1391.82,1357.44,615.335,570.085,555.605,559.225,1408.11,1411.73])
+gen_region_contour_xld (PolygonEncapExtractROI, EncapExtractROI, 'filled')
+
+* Create Inner Encap ROI
+gen_rectangle1 (InnerEncapROI, 721.5, 726.26, 1296.22, 1315.06)
+
+* Create Edge Mask ROI
+gen_rectangle1 (TopEdgeMaskROI, 558.795, 521.215, 761.515, 1437.08)
+gen_rectangle1 (BottomEdgeMaskROI, 1250.06, 525.58, 1616.14, 1431.82)
+gen_rectangle1 (LeftEdgeMaskROI, 571.465, 512.165, 1626.69, 747.465)
+gen_rectangle1 (RightEdgeMaskROI, 573.275, 1205.4, 1610.41, 1442.51)
+gen_rectangle1 (FlexEdgeMaskROI, 419.425, 805.385, 833.915, 1315.8)
+
+* Create Mask Tracing ROI
+gen_rectangle1 (EncapMaskTracingROI, 1516.29, 973.715, 1699.1, 1169.2)
+
+* Create Glue Mask
+gen_contour_polygon_xld (PolygonGlueMask, [552.555,552.555,662.965,662.965,1401.44,1401.44,552.555], [1479.05,557.755,559.565,1354.16,1354.16,1479.05,1479.05])
+gen_region_contour_xld (PolygonGlueMask, GlueMask, 'filled')
+
+
+* Create shape models
+reduce_domain (ReferenceImage, PatternROI, PatternImage)
+create_ncc_model (PatternImage, 'auto', -0.39, 0.79, 'auto', 'use_polarity', ModelID)
+
+dev_clear_window ()
+dev_display (ReferenceImage)
+gen_rectangle1 (RectangleBorderBottomTemp, 1473.74, 501.255, 1969.68, 1451.51)
+dev_display (EncapExtractROI)
+disp_continue_message (WindowHandle, 'black', 'true')
+stop()
+
+
+
+******8
+********
+*******8
+********
+******8
+********
+*******8
+********
+* Open dialog to choose path to read all inspect image
+dev_open_file_dialog ('read_image', 'dir', 'default', SelectedFolder)
+list_image_files(SelectedFolder, 'bmp', 'recursive', ImageFiles)
+***********
+************
+**************8
+************
+* Number image
+NumberImage := 60
+InspectImageCount := 0
+* Loop to inspect image
+for I :=0 to |ImageFiles| - 1 by 1
+    * Filter the image file want to inspect
+    if (regexp_match(ImageFiles[I],'FOV003') != 'FOV003')
+        continue
+    endif
+    
+    InspectImageCount := InspectImageCount + 1
+   
+    read_image (InspectImage, ImageFiles[I]) 
+    
+    * Find shape model in inspect image
+    reduce_domain (InspectImage, SearchPatternROI, ImageReduced)
+    find_ncc_model (ImageReduced, ModelID, -0.39, 0.79, 0.8, 1, 0.5, 'true', 0, MatchPatternRow, MatchPatternCol, MatchPatternAngle, MatchPatternScore)
+
+    * Calculate shift and rotation of inspect image
+    RotationAngle := ReferenceAngle - MatchPatternAngle
+    ShiftAlongRow := ReferenceRow - MatchPatternRow
+    ShiftAlongCol := ReferenceColumn - MatchPatternCol
+    hom_mat2d_identity (HomMat2DIdentity)
+    hom_mat2d_rotate (HomMat2DIdentity, -RotationAngle, ReferenceRow, ReferenceColumn, HomMat2DRotate)
+    hom_mat2d_translate (HomMat2DRotate, -ShiftAlongRow, -ShiftAlongCol, HomMat2DTranslate)
+    
+    affine_trans_region (EncapExtractROI, EncapExtractROIProjection, HomMat2DTranslate, 'nearest_neighbor')
+    affine_trans_region (TopEdgeMaskROI, TopEdgeMaskROIProjection, HomMat2DTranslate, 'nearest_neighbor')
+    affine_trans_region (BottomEdgeMaskROI, BottomEdgeMaskROIProjection, HomMat2DTranslate, 'nearest_neighbor')
+    affine_trans_region (LeftEdgeMaskROI, LeftEdgeMaskROIProjection, HomMat2DTranslate, 'nearest_neighbor')
+    affine_trans_region (RightEdgeMaskROI, RightEdgeMaskROIProjection, HomMat2DTranslate, 'nearest_neighbor')
+    affine_trans_region (FlexEdgeMaskROI, FlexEdgeMaskROIProjection, HomMat2DTranslate, 'nearest_neighbor')
+    affine_trans_region (InnerEncapROI, InnerEncapROIProjection, HomMat2DTranslate, 'nearest_neighbor')
+    affine_trans_region (EncapMaskTracingROI, EncapMaskTracingROIProjection, HomMat2DTranslate, 'nearest_neighbor')
+    affine_trans_region (GlueMask, GlueMaskProjection, HomMat2DTranslate, 'nearest_neighbor')
+    affine_trans_region (RectangleBorderBottomTemp, RectangleBorderBottom, HomMat2DTranslate, 'nearest_neighbor')
+
+    ***** Encap Tracing *****
+    MaxEdgeEncapContrast := 70
+    MaxEdgeFlexContrast := 140
+    MinMeanEncapGray := 145
+    MaxMeanEncapGray := 180
+    BoundaryOffset := 1
+        
+    _HP_Encap_DarkBlue_Tracing_Local (InspectImage, EncapExtractROIProjection, InnerEncapROIProjection, FlexEdgeMaskROIProjection, TopEdgeMaskROIProjection, BottomEdgeMaskROIProjection, LeftEdgeMaskROIProjection, RightEdgeMaskROIProjection, EncapMaskTracingROIProjection, EncapRegion, DebugImageOut, DebugRegionOut, IsStepMode, MaxEdgeEncapContrast, MaxEdgeFlexContrast, MinMeanEncapGray, MaxMeanEncapGray, BoundaryOffset, IsPass, DebugMessageOut)
+    gen_contour_region_xld (EncapRegion, Contours, 'border')
+    smooth_contours_xld (Contours, SmoothedContours, 13)
+    dev_clear_window ()
+    dev_display (InspectImage)
+    dev_display (SmoothedContours)
+* stop ()
+gen_rectangle1 (hROIInspectBulgeTemp, 762.527, 1305.14, 1300.4, 1491.46)
+affine_trans_region (hROIInspectBulgeTemp, hROIInspectBulge, HomMat2DTranslate, 'nearest_neighbor')
+
+**** Bulge****
+* hScaleContrastEncap := 3
+* hValueContrastDefect := 60
+* hScaleContrastDefect :=10
+* hWidthLocalSearch :=200
+* hHeightLocalSearch := 200
+* hOffsetEncap := 1
+* hClosingRadiusDefect := 3.5
+* hMinAreaDefect := 200
+* hCircularityDefect := 0.1
+* hHWRatioDefect := 10
+* hInnerDefectPercent := 20
+* hOffsetCheckDefect := 50
+* hMaxContrastInOutDefect := 75
+* hMinGrayDefect := 160
+* hMaxGrayDefect := 225 
+* hMaxDeviationInnerDefect := 25
+* IstepMode := 1
+* dev_set_line_width (1)
+
+* reduce_domain (InspectImage, EncapRegion, ImageReduced3)
+* _HP_DarkBlue_Encap_Inspection_VOID (InspectImage, EncapRegion, hROIInspectBulge,\
+      DebugImageOut, DebugRegionOut, VoidDefectRegions, hScaleContrastEncap, hValueContrastDefect, \
+      hScaleContrastDefect, hWidthLocalSearch, hHeightLocalSearch, hOffsetEncap, hClosingRadiusDefect, \
+      hMinAreaDefect, hCircularityDefect, hHWRatioDefect, hInnerDefectPercent, hOffsetCheckDefect, hMaxContrastInOutDefect, \
+      hMinGrayDefect, hMaxGrayDefect, hMaxDeviationInnerDefect, IstepMode, DebugMessageOut, IsPass)
+  
+* dev_display (InspectImage)
+* dev_display (VoidDefectRegions)
+* dev_disp_text (IsPass, 'window', 300, 300, 'black', [], [])
+* stop()
+
+
+* hGrayDarkInner := 140
+* hGrayWhiteInner := 250
+* hOffsetWidthBulge := 1
+* hOffsetHeightBulge :=5
+* hDeviationMaskSize := 11
+* hAnotherContrastDefect  := 35
+* hMinWhiteAreaDefect := 50
+* hMaxWhiteAreaDefect := 100
+*  _HP_DarkBlue_Encap_Inspection_Bulge (InspectImage, EncapRegion, hROIInspectBulge, DebugImageOut, DebugRegionOut, BulgeRegion, VoidRegion, GlueRegion, hWidthLocalSearch, hHeightLocalSearch, hValueContrastDefect, hClosingRadiusDefect, hMinGrayDefect, hCircularityDefect, hHWRatioDefect, hMinAreaDefect, hInnerDefectPercent, hGrayDarkInner, hGrayWhiteInner, hOffsetWidthBulge, hOffsetHeightBulge, hScaleContrastDefect, hDeviationMaskSize, hScaleContrastEncap, hAnotherContrastDefect, hMinWhiteAreaDefect, hMaxWhiteAreaDefect, IsStepMode, DebugMessageOut, TypeError)
+*    filename := ImageFiles[I]
+*    tuple_split (filename, ' ', a )
+*    dev_disp_text (a[7], 'window',100, 300, 'black', [], [])
+*    dev_set_color ('green')
+*     dev_display (BulgeRegion)
+*    dev_set_color ('red')
+*     dev_display (VoidRegion)
+* dev_disp_text (TypeError, 'window', 500, 600, 'black', [], [])
+* stop()
+* stop()   
+    
+** Sliver Inspection**
+* stop()
+* Dark blue
+gen_rectangle1 (hROIInspectBoundarySliverTemp, 681.637, 605.275, 1930.91, 712.281)
+gen_rectangle1 (hROIInspectSliverTemp, 702.305, 605.275, 1271.73, 712.281)
+gen_rectangle1 (hROIInspectSliverQuadrantTemp, 714.975, 615.275, 755.475, 672.281)
+ * Dark blue
+affine_trans_region (hROIInspectSliverTemp, hROIInspectSliver, HomMat2DTranslate, 'nearest_neighbor')
+affine_trans_region (hROIInspectBoundarySliverTemp, hROIInspectBoundarySliver, HomMat2DTranslate, 'nearest_neighbor')
+affine_trans_region (hROIInspectSliverQuadrantTemp, hROIInspectSliverQuadrantTop, HomMat2DTranslate, 'nearest_neighbor')
+
+**** Sliver
+hMinAreaDefectQuaDrant := 15
+hMinAreaDefectSliver := 200
+hMinLenghtDefectQuaDrant :=30
+hMinGrayDefectSliver := 170
+hMaxGrayDefectSliver := 250
+hMinGrayDefectDrant := 190
+hMaxGrayDefectDrant := 230
+
+hContrastThreshold := 15
+hLineWidthThreshold := 10
+hHeightVarThreshold :=100
+hWidthVarThreshold := 100
+hContrastVarThreshold := 30
+hScaleVarThreshold := 0.1
+
+SLIVER := 0
+SQUADRANT := 1
+DIECRACK := 2
+CONTAMINATION := 3
+TypeError := [0,0,0,0]
+gen_empty_obj (RegionMidDie)
+
+*Get left right encap border 
+reduce_domain (InspectImage, RectangleBorderBottom, ImageReduced2)
+emphasize (ImageReduced2, ImageEmphasize3,100,3, 1)
+threshold (ImageEmphasize3, RegionWhiteBorder1, 230, 255)
+opening_circle (RegionWhiteBorder1, RegionOpening13, 5.5)
+opening_rectangle1 (RegionOpening13, RegionOpening14, 10,1)
+dilation_rectangle1 (RegionOpening14, RegionDilation3, 100, 30)
+difference (RectangleBorderBottom, RegionWhiteBorder1, RegionDifference8)
+
+* Region no White
+reduce_domain (InspectImage, RegionDifference8, ImageReducedNoWhiteBot)
+emphasize (ImageReducedNoWhiteBot, ImageEmphasize4, 50, 100, 2)
+mean_image (ImageEmphasize4, ImageMean2, 1, 10)
+threshold (ImageMean2, Region2, 60, 255)
+fill_up_shape (Region2, RegionFillUp8, 'area', 1, 50)
+union2 (RegionFillUp8, RegionDilation3, RegionUnion18)
+opening_rectangle1 (RegionUnion18, RegionOpening15,  50, 100)
+connection (RegionOpening15, ConnectedRegions4)
+select_shape (ConnectedRegions4, SelectedRegions8, 'width', 'and', 300, 99999999)
+union1 (SelectedRegions8, RegionUnion19)
+shape_trans (RegionUnion19, RegionTrans4, 'rectangle1')
+smallest_rectangle1 (RegionTrans4, Row12, Column12, Row22, Column22)
+
+* Get left right Die 
+connection (RegionOpening14, ConnectedRegions8)
+select_shape (ConnectedRegions8, SelectedRegions2, 'area', 'and', 6000, 9999999)
+union1 (SelectedRegions2, RegionUnion6)
+smallest_rectangle1 (RegionUnion6, Row13, ColumLeftWhite, Row23, ColumRightWhite)
+*  Offset := ColumLeftWhite - Column12
+OffsetLeft := 47
+* OffsetRight := ColumRightWhite - Column12
+OffsetRight := 150
+gen_rectangle1 (RegionMidDie, Row1, Column12 + OffsetLeft, Row2, Column12 + OffsetRight)
+
+** Step 1 : Threshold 
+reduce_domain (InspectImage, hROIInspectBoundarySliver, ImageReducedFullDie)
+crop_domain (ImageReducedFullDie, ImagePart1)
+reduce_domain (InspectImage, hROIInspectSliver, ImageReducedSliver)
+* Threshold Find White region
+emphasize (ImageReducedFullDie, ImageEmphasize, 20, 20, 1)
+gauss_filter (ImageEmphasize, ImageGauss,3)
+threshold (ImageGauss, RegionWhite, 240, 255)
+* Line gauss find white region on Encap
+
+calculate_lines_gauss_parameters (hLineWidthThreshold, hContrastThreshold, Sigma, Low, High)
+lines_gauss (ImageReducedSliver, Lines, Sigma, Low, High, 'light', 'true', 'parabolic', 'true')
+lines_gauss (ImageReducedFullDie, LinesAll, Sigma, Low, High, 'light', 'true', 'parabolic', 'true')
+* Var Threshoid find Blur region on Die Encap
+
+crop_domain (ImageReducedSliver, ImagePartSliver)
+smallest_rectangle1 (ImageReducedSliver, Row1, Column1, Row2, Column2)                
+threshold (ImagePartSliver, Region2, 0, 150)
+difference (ImagePartSliver, Region2, RegionDifference2)
+reduce_domain (ImagePartSliver, RegionDifference2, ImageReduced4)
+crop_domain (ImageReduced4, ImagePart)
+dev_set_color ('green')
+var_threshold (ImageReduced4, RegionVarForSliverLight, hWidthVarThreshold, hHeightVarThreshold, hScaleVarThreshold, hContrastVarThreshold, 'light')
+move_region (RegionVarForSliverLight, RegionVarForSliverLight, Row1, Column1)
+dev_set_color ('yellow')
+dev_display (InspectImage)
+dev_display (RegionMidDie)
+dev_set_color ('red')
+               
+******************
+* Die Crack
+difference (RegionWhite, EncapRegion, RegionWhiteBottom)
+closing_rectangle1 (RegionWhiteBottom, RegionClosing, 1, 10)
+connection (RegionClosing, ConnectedRegions2)
+select_shape (ConnectedRegions2, RegionDieBottom, 'height', 'and',400, 99999)
+* Add linesgauss for remove bottom Die
+segment_contours_xld (LinesAll, ContoursSplit1, 'lines_circles', 1, 1,2)
+gen_region_contour_xld (ContoursSplit1, Region1, 'filled')
+union1 (Region1, RegionUnion3)
+connection (RegionUnion3, ConnectedRegions4)
+dilation_rectangle1 (ConnectedRegions4, RegionDilation,1,10)
+select_shape_proto (RegionDilation, RegionDieBottom, SelectedRegions9,'overlaps_abs', 1, 99999)
+union2 (SelectedRegions9, RegionDieBottom, RegionUnion1)
+union1 (RegionUnion1, RegionUnion2)
+dilation_rectangle1 (RegionUnion2, RegionDieBottomDilation, 10, 20)
+count_obj (RegionDieBottom, NumberDieBottom)
+if (NumberDieBottom = 0)
+    TypeError[DIECRACK] := 1
+endif
+dev_display (InspectImage)
+dev_display (hROIInspectBoundarySliver)
+dev_disp_text ('Die crack ' +TypeError[DIECRACK] , 'window', 400, 400, 'black', [], [])
+
+***************
+**Sliver In Quadrant
+hMinAreaDefectQuaDrant := 15
+hMinLenghtDefectQuaDrant :=10
+hMinGrayDefectQuadrant := 175
+hMaxGrayDefectQuadrant := 230
+hMinDiffGrayQuadrant := 7
+ * Get Result from Var Threshold method
+intersection (RegionVarForSliverLight, RegionMidDie, RegionIntersectionSliver)
+*Get result from line gauss
+* get long lines
+segment_contours_xld (Lines, ContoursSplit, 'lines', 1, 1, 2)
+select_shape_xld (Lines, SelectedXLD, 'contlength', 'and',hMinLenghtDefectQuaDrant, 99999)
+segment_contours_xld (SelectedXLD, ContoursSplit2, 'lines', 1, 1, 2)
+gen_region_contour_xld (ContoursSplit2, Region, 'filled')
+dilation_circle (Region, RegionDilation1, 1.5)
+union1 (RegionDilation1, RegionUnion5)
+gen_region_contour_xld (ContoursSplit, RegionLines, 'filled')
+*Union var and lines gauss
+connection (RegionLines, ConnectedRegions6)
+* Select region near long lines
+select_shape_proto (ConnectedRegions6, RegionUnion5, SelectedRegions1, 'overlaps_abs', 1, 99999)
+union1 (SelectedRegions1, RegionUnion4)
+intersection (RegionUnion4, hROIInspectSliverQuadrantTop, RegionIntersection3)
+connection (RegionIntersection3, ConnectedRegions5)
+select_shape (ConnectedRegions5, SelectedRegions7, 'area', 'and', hMinAreaDefectQuaDrant, 99999)
+select_gray (SelectedRegions7, InspectImage, SquadrantRegion, 'mean', 'and', hMinGrayDefectQuadrant, 255)
+count_obj (SquadrantRegion, NumberQuadVarDefect)
+gen_empty_obj (QuadrantRejectRegion)
+if (NumberQuadVarDefect > 0)
+    ArraydiffGray := []
+    for index := 1 to NumberQuadVarDefect by 1
+        select_obj (SquadrantRegion, ObjectSelected, index)
+        closing_rectangle1 (ObjectSelected, RegionClosing1, 2, 2)
+        region_features (RegionClosing1, 'width', ValueWidth)
+        region_features (RegionClosing1, 'height', ValueHeight)
+        smallest_rectangle1 (RegionClosing1, Row12, Column12, Row22, Column22)
+        gen_rectangle1 (Rectangle, Row12, Column12, Row12+round(ValueHeight/2), Column12 + round(ValueWidth/2))
+        intersection (ObjectSelected, Rectangle, RegionIntersection2)
+        gray_features (RegionIntersection2, InspectImage, 'mean', GrayCornerDefect)
+        difference (ObjectSelected, RegionIntersection2, RegionDifference1)
+        gray_features (RegionDifference1, InspectImage, 'mean', GrayDefect)
+        diff := GrayCornerDefect - GrayDefect
+        if (diff > hMinDiffGrayQuadrant)
+            concat_obj (QuadrantRejectRegion, ObjectSelected, QuadrantRejectRegion)
+            tuple_concat (ArraydiffGray, diff, ArraydiffGray)
+            TypeError[SQUADRANT] := 1
+        endif
+    endfor
+endif
+dev_clear_window ()
+dev_set_color ('red')
+dev_display (InspectImage)
+dev_set_color ('yellow')
+dev_set_color ('green')
+dev_display (QuadrantRejectRegion)
+dev_display (hROIInspectSliverQuadrantTop)
+dev_disp_text ('QUADRANT ' + TypeError[SQUADRANT] + '  ' + ArraydiffGray, 'window', 400, 400, 'black', [], [])
+stop()
+
+***************
+* Sliver
+hMinAreaDefectSliver := 50
+hMinSumAreaDefectSliver := 300
+hMinGrayDefectSliver := 180
+hMaxGrayDefectSliver := 255
+hSmallAreaDefectSliver := 10
+hSmallLengthDefectSliver := 5
+
+if (TypeError[SQUADRANT] = 0)
+    hSmallAreaDefectSliver := 50
+    hSmallLengthDefectSliver := 10
+endif
+if (TypeError[SQUADRANT] > 0)
+    gray_features (QuadrantRejectRegion, InspectImage, 'mean', Value)
+    hMaxGrayDefectSliver := 1.1*max(Value)
+endif
+* Get Result from Threshold Method 
+intersection (RegionWhite, hROIInspectSliver, RegionIntersection)
+difference (RegionIntersection, RegionMidDie, RegionDifference)
+connection (RegionDifference, ConnectedRegions3)
+select_shape (ConnectedRegions3, SelectedRegions4, 'area', 'and',3*hMinAreaDefectSliver, 999999)
+count_obj (SelectedRegions4, NumberRegionSliver)
+if(NumberRegionSliver>0)
+    TypeError[SLIVER] := 1
+endif
+* Get Result from Var Threshold Method 
+intersection (RegionVarForSliverLight, RegionMidDie, RegionIntersectionVar)
+* Get Result from Lines Guass method
+dev_display (RegionMidDie)
+gen_empty_obj (DefectRegionSliver)
+smallest_rectangle1 (RegionMidDie, Row11, Column11, Row21, Column21)
+crop_contours_xld (Lines, CroppedContours, Row11, Column11, Row21, Column2, 'true')
+select_contours_xld (CroppedContours, SelectedContours, 'contour_length', hSmallLengthDefectSliver, 20000, -0.5, 0.5)
+segment_contours_xld (SelectedContours, ContoursSplit, 'lines',1, 1, 2)
+gen_region_contour_xld (ContoursSplit, SliverLinesGaussRegion, 'filled')
+union1 (SliverLinesGaussRegion, RegionUnion7)
+closing_circle (RegionUnion7, RegionClosing2, 3)
+connection (RegionClosing2, ConnectedRegions7)
+select_gray (ConnectedRegions7, InspectImage, SelectedRegions, 'mean', 'and', hMinGrayDefectSliver, hMaxGrayDefectSliver)
+dilation_circle (SelectedRegions, RegionDilation2, 1.5)
+union1 (RegionDilation2, RegionUnionLineGauss)
+connection (RegionUnionLineGauss, ConnectedRegions)
+* Union var and linesgauss
+union2 (RegionIntersectionVar, ConnectedRegions, DefectRegionSliver)
+connection (DefectRegionSliver, ConnectedRegions1)
+select_shape (ConnectedRegions1, SliverRegion, 'area', 'and', hSmallAreaDefectSliver, 999999)
+select_gray (SliverRegion, InspectImage, DefectRegionSliver, 'mean', 'and', hMinGrayDefectSliver, hMaxGrayDefectSliver)
+count_obj (DefectRegionSliver, Number)
+if ( Number > 0)
+    union1 (DefectRegionSliver, RegionUnion)
+    region_features (RegionUnion, 'area', Value1)
+    if(Value1> hMinSumAreaDefectSliver)
+        TypeError[SLIVER] := 1
+    endif 
+endif
+dev_display (InspectImage)
+dev_set_color ('red')
+dev_set_color ('blue')
+dev_display (DefectRegionSliver)
+dev_display (RegionDieBottomDilation)
+dev_display (RegionMidDie)
+dev_disp_text ('Sliver ' + TypeError[SLIVER], 'window', 400, 400, 'black', [], [])
+stop()
+filename := ImageFiles[I]
+tuple_split (filename, ' ', a )
+dev_disp_text (a[6], 'window',100, 300, 'black', [], [])
+endfor
+* GetlineComment (hROIInspectSliver, RegionDieBottomDilation, hROIInspectBoundarySliver, InspectImage, RegionMidDie, Region, NumberDieBottom, DieWidth, Value)
