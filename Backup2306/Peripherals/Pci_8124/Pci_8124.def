@@ -1,0 +1,19 @@
+; Pci_8124.def : Declares the module parameters for the DLL.
+
+LIBRARY "Pci_8124"
+
+EXPORTS
+
+	InitializeScaleLibrary;
+	FreeScaleLibrary;
+	RegisterScaleCards;
+	ReleaseScaleCard;
+	InitializeScaleChannel;
+	ResetScaleFifo;
+	SetScaleFifoArray;
+	SetScaleEncoderValue;
+	GetScaleEncoderValue;
+	GetScaleIntCount;
+	SetScaleLatch;
+	GetScaleLatchValue;
+	ManualTrigger;

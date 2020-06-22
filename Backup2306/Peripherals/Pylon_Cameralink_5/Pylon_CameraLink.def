@@ -1,0 +1,37 @@
+; Pylon_CameraLink.def : Declares the module parameters for the DLL.
+
+LIBRARY      "PYLON_CAMERALINK"
+
+EXPORTS
+    ; Explicit exports can go here
+	InitDLL;
+	FreeDLL;
+	RegisterCamera;
+	ReleaseCamera;
+	ImageGrab;
+	EnqueueAsyncGrabNoTrigger;
+	RegHookFunction;
+	WaitForCompletion;
+	CancelPendingGrab;
+	EnqueueAsyncGrab;
+	SetTriggerMode;
+	SetTriggerParms;
+	GetTriggerMode;
+	SetGrabTimeOut;
+	GetResolution;
+    WaitForExposure;
+	GetCameraAoi;
+	SetCameraAoi;
+	GetCameraGain;
+	SetCameraGain;
+	GetCameraGainRange;
+	GetExposure;
+	SetExposure;
+	GetExposureRange;
+	GetBytesPerPkt;
+	SetBytesPerPkt;
+	GetBlackLevel;
+	SetBlackLevel;
+	SetOutputLine;
+	SetWhiteBalance;
+	EnableOutputLine;

@@ -1,0 +1,2054 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="13.0.2.2">
+<procedure name="main">
+<interface/>
+<body>
+<c>* Initial setting</c>
+<l>IsStepMode := false</l>
+<c>* Close window</c>
+<l>dev_close_window()</l>
+<l>dev_open_window (0, 0, 800, 800, 'black', WindowHandle)</l>
+<l>dev_set_draw ('margin')</l>
+<l>dev_set_line_width (3)</l>
+<c></c>
+<c>* Read reference image</c>
+<l>dev_open_file_dialog ('read_image', 'default', 'default', RefImageDir)</l>
+<l>read_image (ReferenceImage, RefImageDir)</l>
+<c></c>
+<l>disp_continue_message (WindowHandle, 'black', 'true')</l>
+<l>stop()</l>
+<c></c>
+<c>* Get size of image</c>
+<l>get_image_size (ReferenceImage, WidthImage, HeightImage)</l>
+<c></c>
+<c>* Teach Device Patterns</c>
+<l>gen_rectangle1 (PatternROI1, 430.86, 315.66, 599.82, 484.62)</l>
+<l>gen_rectangle1 (PatternROI2, 425.74, 1475.34, 587.02, 1636.62)</l>
+<l>union2 (PatternROI1, PatternROI2, PatternROI)</l>
+<c></c>
+<l>area_center (PatternROI, Area, ReferenceRow, ReferenceColumn)</l>
+<l>ReferenceAngle := 0</l>
+<c></c>
+<c>* Create Pattern Search ROI</c>
+<l>gen_rectangle1 (SearchPatternROI, 246.54, 90.38, 930.06, 1874.7)</l>
+<c></c>
+<c>* Create Encap Extract ROI</c>
+<l>gen_contour_polygon_xld (PolygonEncapExtractROI, [656.535,623.955,611.285,611.285,620.335,652.915,1595.93,1595.93,656.535], [1411.73,1391.82,1357.44,615.335,570.085,555.605,559.225,1408.11,1411.73])</l>
+<l>gen_region_contour_xld (PolygonEncapExtractROI, EncapExtractROI, 'filled')</l>
+<c></c>
+<c>* Create Inner Encap ROI</c>
+<l>gen_rectangle1 (InnerEncapROI, 721.5, 726.26, 1296.22, 1315.06)</l>
+<c></c>
+<c>* Create Edge Mask ROI</c>
+<l>gen_rectangle1 (TopEdgeMaskROI, 558.795, 521.215, 761.515, 1437.08)</l>
+<l>gen_rectangle1 (BottomEdgeMaskROI, 1250.06, 525.58, 1616.14, 1431.82)</l>
+<l>gen_rectangle1 (LeftEdgeMaskROI, 571.465, 512.165, 1626.69, 747.465)</l>
+<l>gen_rectangle1 (RightEdgeMaskROI, 573.275, 1205.4, 1610.41, 1442.51)</l>
+<l>gen_rectangle1 (FlexEdgeMaskROI, 419.425, 805.385, 833.915, 1315.8)</l>
+<c></c>
+<c>* Create Mask Tracing ROI</c>
+<l>gen_rectangle1 (EncapMaskTracingROI, 1516.29, 973.715, 1699.1, 1169.2)</l>
+<c></c>
+<c>* Create Glue Mask</c>
+<l>gen_contour_polygon_xld (PolygonGlueMask, [552.555,552.555,662.965,662.965,1401.44,1401.44,552.555], [1479.05,557.755,559.565,1354.16,1354.16,1479.05,1479.05])</l>
+<l>gen_region_contour_xld (PolygonGlueMask, GlueMask, 'filled')</l>
+<c></c>
+<c></c>
+<c>* Create shape models</c>
+<l>reduce_domain (ReferenceImage, PatternROI, PatternImage)</l>
+<l>create_ncc_model (PatternImage, 'auto', -0.39, 0.79, 'auto', 'use_polarity', ModelID)</l>
+<c></c>
+<l>dev_clear_window ()</l>
+<l>dev_display (ReferenceImage)</l>
+<l>gen_rectangle1 (RectangleBorderBottomTemp, 1473.74, 501.255, 1969.68, 1451.51)</l>
+<l>dev_display (EncapExtractROI)</l>
+<l>disp_continue_message (WindowHandle, 'black', 'true')</l>
+<l>stop()</l>
+<c></c>
+<c></c>
+<c></c>
+<c>******8</c>
+<c>********</c>
+<c>*******8</c>
+<c>********</c>
+<c>******8</c>
+<c>********</c>
+<c>*******8</c>
+<c>********</c>
+<c>* Open dialog to choose path to read all inspect image</c>
+<l>dev_open_file_dialog ('read_image', 'dir', 'default', SelectedFolder)</l>
+<l>list_image_files(SelectedFolder, 'bmp', 'recursive', ImageFiles)</l>
+<c>***********</c>
+<c>************</c>
+<c>**************8</c>
+<c>************</c>
+<c>* Number image</c>
+<l>NumberImage := 60</l>
+<l>InspectImageCount := 0</l>
+<c>* Loop to inspect image</c>
+<l>for I :=0 to |ImageFiles| - 1 by 1</l>
+<c>    * Filter the image file want to inspect</c>
+<l>    if (regexp_match(ImageFiles[I],'FOV003') != 'FOV003')</l>
+<l>        continue</l>
+<l>    endif</l>
+<c>    </c>
+<l>    InspectImageCount := InspectImageCount + 1</l>
+<c>   </c>
+<l>    read_image (InspectImage, ImageFiles[I]) </l>
+<c>    </c>
+<c>    * Find shape model in inspect image</c>
+<l>    reduce_domain (InspectImage, SearchPatternROI, ImageReduced)</l>
+<l>    find_ncc_model (ImageReduced, ModelID, -0.39, 0.79, 0.8, 1, 0.5, 'true', 0, MatchPatternRow, MatchPatternCol, MatchPatternAngle, MatchPatternScore)</l>
+<c></c>
+<c>    * Calculate shift and rotation of inspect image</c>
+<l>    RotationAngle := ReferenceAngle - MatchPatternAngle</l>
+<l>    ShiftAlongRow := ReferenceRow - MatchPatternRow</l>
+<l>    ShiftAlongCol := ReferenceColumn - MatchPatternCol</l>
+<l>    hom_mat2d_identity (HomMat2DIdentity)</l>
+<l>    hom_mat2d_rotate (HomMat2DIdentity, -RotationAngle, ReferenceRow, ReferenceColumn, HomMat2DRotate)</l>
+<l>    hom_mat2d_translate (HomMat2DRotate, -ShiftAlongRow, -ShiftAlongCol, HomMat2DTranslate)</l>
+<c>    </c>
+<l>    affine_trans_region (EncapExtractROI, EncapExtractROIProjection, HomMat2DTranslate, 'nearest_neighbor')</l>
+<l>    affine_trans_region (TopEdgeMaskROI, TopEdgeMaskROIProjection, HomMat2DTranslate, 'nearest_neighbor')</l>
+<l>    affine_trans_region (BottomEdgeMaskROI, BottomEdgeMaskROIProjection, HomMat2DTranslate, 'nearest_neighbor')</l>
+<l>    affine_trans_region (LeftEdgeMaskROI, LeftEdgeMaskROIProjection, HomMat2DTranslate, 'nearest_neighbor')</l>
+<l>    affine_trans_region (RightEdgeMaskROI, RightEdgeMaskROIProjection, HomMat2DTranslate, 'nearest_neighbor')</l>
+<l>    affine_trans_region (FlexEdgeMaskROI, FlexEdgeMaskROIProjection, HomMat2DTranslate, 'nearest_neighbor')</l>
+<l>    affine_trans_region (InnerEncapROI, InnerEncapROIProjection, HomMat2DTranslate, 'nearest_neighbor')</l>
+<l>    affine_trans_region (EncapMaskTracingROI, EncapMaskTracingROIProjection, HomMat2DTranslate, 'nearest_neighbor')</l>
+<l>    affine_trans_region (GlueMask, GlueMaskProjection, HomMat2DTranslate, 'nearest_neighbor')</l>
+<l>    affine_trans_region (RectangleBorderBottomTemp, RectangleBorderBottom, HomMat2DTranslate, 'nearest_neighbor')</l>
+<c></c>
+<c>    ***** Encap Tracing *****</c>
+<l>    MaxEdgeEncapContrast := 70</l>
+<l>    MaxEdgeFlexContrast := 140</l>
+<l>    MinMeanEncapGray := 145</l>
+<l>    MaxMeanEncapGray := 180</l>
+<l>    BoundaryOffset := 1</l>
+<c></c>
+<l>    _HP_Encap_DarkBlue_Tracing_Local (InspectImage, EncapExtractROIProjection, InnerEncapROIProjection, FlexEdgeMaskROIProjection, TopEdgeMaskROIProjection, BottomEdgeMaskROIProjection, LeftEdgeMaskROIProjection, RightEdgeMaskROIProjection, EncapMaskTracingROIProjection, EncapRegion, DebugImageOut, DebugRegionOut, IsStepMode, MaxEdgeEncapContrast, MaxEdgeFlexContrast, MinMeanEncapGray, MaxMeanEncapGray, BoundaryOffset, IsPass, DebugMessageOut)</l>
+<l>    gen_contour_region_xld (EncapRegion, Contours, 'border')</l>
+<l>    smooth_contours_xld (Contours, SmoothedContours, 13)</l>
+<l>    dev_clear_window ()</l>
+<l>    dev_display (InspectImage)</l>
+<l>    dev_display (SmoothedContours)</l>
+<l>* stop ()</l>
+<l>gen_rectangle1 (hROIInspectBulgeTemp, 762.527, 1305.14, 1300.4, 1491.46)</l>
+<l>affine_trans_region (hROIInspectBulgeTemp, hROIInspectBulge, HomMat2DTranslate, 'nearest_neighbor')</l>
+<c></c>
+<c>**** Bulge****</c>
+<l>* hScaleContrastEncap := 3</l>
+<l>* hValueContrastDefect := 60</l>
+<l>* hScaleContrastDefect :=10</l>
+<l>* hWidthLocalSearch :=200</l>
+<l>* hHeightLocalSearch := 200</l>
+<l>* hOffsetEncap := 1</l>
+<l>* hClosingRadiusDefect := 3.5</l>
+<l>* hMinAreaDefect := 200</l>
+<l>* hCircularityDefect := 0.1</l>
+<l>* hHWRatioDefect := 10</l>
+<l>* hInnerDefectPercent := 20</l>
+<l>* hOffsetCheckDefect := 50</l>
+<l>* hMaxContrastInOutDefect := 75</l>
+<l>* hMinGrayDefect := 160</l>
+<l>* hMaxGrayDefect := 225 </l>
+<l>* hMaxDeviationInnerDefect := 25</l>
+<l>* IstepMode := 1</l>
+<l>* dev_set_line_width (1)</l>
+<c></c>
+<l>* reduce_domain (InspectImage, EncapRegion, ImageReduced3)</l>
+<l>* _HP_DarkBlue_Encap_Inspection_VOID (InspectImage, EncapRegion, hROIInspectBulge,\
+      DebugImageOut, DebugRegionOut, VoidDefectRegions, hScaleContrastEncap, hValueContrastDefect, \
+      hScaleContrastDefect, hWidthLocalSearch, hHeightLocalSearch, hOffsetEncap, hClosingRadiusDefect, \
+      hMinAreaDefect, hCircularityDefect, hHWRatioDefect, hInnerDefectPercent, hOffsetCheckDefect, hMaxContrastInOutDefect, \
+      hMinGrayDefect, hMaxGrayDefect, hMaxDeviationInnerDefect, IstepMode, DebugMessageOut, IsPass)</l>
+<c>  </c>
+<l>* dev_display (InspectImage)</l>
+<l>* dev_display (VoidDefectRegions)</l>
+<l>* dev_disp_text (IsPass, 'window', 300, 300, 'black', [], [])</l>
+<l>* stop()</l>
+<c></c>
+<c></c>
+<l>* hGrayDarkInner := 140</l>
+<l>* hGrayWhiteInner := 250</l>
+<l>* hOffsetWidthBulge := 1</l>
+<l>* hOffsetHeightBulge :=5</l>
+<l>* hDeviationMaskSize := 11</l>
+<l>* hAnotherContrastDefect  := 35</l>
+<l>* hMinWhiteAreaDefect := 50</l>
+<l>* hMaxWhiteAreaDefect := 100</l>
+<l>*  _HP_DarkBlue_Encap_Inspection_Bulge (InspectImage, EncapRegion, hROIInspectBulge, DebugImageOut, DebugRegionOut, BulgeRegion, VoidRegion, GlueRegion, hWidthLocalSearch, hHeightLocalSearch, hValueContrastDefect, hClosingRadiusDefect, hMinGrayDefect, hCircularityDefect, hHWRatioDefect, hMinAreaDefect, hInnerDefectPercent, hGrayDarkInner, hGrayWhiteInner, hOffsetWidthBulge, hOffsetHeightBulge, hScaleContrastDefect, hDeviationMaskSize, hScaleContrastEncap, hAnotherContrastDefect, hMinWhiteAreaDefect, hMaxWhiteAreaDefect, IsStepMode, DebugMessageOut, TypeError)</l>
+<l>*    filename := ImageFiles[I]</l>
+<l>*    tuple_split (filename, ' ', a )</l>
+<l>*    dev_disp_text (a[7], 'window',100, 300, 'black', [], [])</l>
+<l>*    dev_set_color ('green')</l>
+<l>*     dev_display (BulgeRegion)</l>
+<l>*    dev_set_color ('red')</l>
+<l>*     dev_display (VoidRegion)</l>
+<l>* dev_disp_text (TypeError, 'window', 500, 600, 'black', [], [])</l>
+<l>* stop()</l>
+<l>* stop()   </l>
+<c>    </c>
+<c>** Sliver Inspection**</c>
+<l>* stop()</l>
+<c>* Dark blue</c>
+<l>gen_rectangle1 (hROIInspectBoundarySliverTemp, 681.637, 585.275, 1930.91, 712.281)</l>
+<l>gen_rectangle1 (hROIInspectSliverTemp, 702.305, 585.275, 1301.73, 712.281)</l>
+<l>gen_rectangle1 (hROIInspectSliverQuadrantTemp, 705.793, 600.233, 776.472, 689.733)</l>
+<c></c>
+<c>* Dark blue</c>
+<l>*  dev_display (ReferenceImage)</l>
+<c></c>
+<l>affine_trans_region (hROIInspectSliverTemp, hROIInspectSliver, HomMat2DTranslate, 'nearest_neighbor')</l>
+<l>affine_trans_region (hROIInspectBoundarySliverTemp, hROIInspectAllSliver, HomMat2DTranslate, 'nearest_neighbor')</l>
+<l>affine_trans_region (hROIInspectSliverQuadrantTemp, hROIInspectQuadrantSliver, HomMat2DTranslate, 'nearest_neighbor')</l>
+<c></c>
+<c>**** Sliver</c>
+<c></c>
+<c></c>
+<c></c>
+<l>hROIInspectSliverIn := hROIInspectSliver</l>
+<c></c>
+<l>hGrayThresholdSliver := 240</l>
+<l>hIsStepMode := 1</l>
+<l>hIsDieCrack := false</l>
+<l>DebugMessageOut :=  []</l>
+<l>_HP_DarkEncap_Inspect_CrackDieSliver (InspectImage, hROIInspectAllSliver, hROIInspectSliverIn, hROIInspectSliver, hRegionDieBottom, RegionWhite, DebugImageOut, DebugRegionOut, hGrayThresholdSliver, hIsStepMode, hIsDieCrack, DebugMessageOut)</l>
+<l>* InspectImage</l>
+<l>* hROIInspectSliver</l>
+<l>* hROIInspectQuadrantSliver</l>
+<l>hOffsetSliver := 40</l>
+<l>hGrayAllWhiteSliver := 165</l>
+<l>hContrastGaussThresholdSliver := 20</l>
+<l>hLineWidthThresholdSliver := 12</l>
+<l>hWidthVarThresholdSliver := 100</l>
+<l>hHeightVarThresholdSliver := 2 * hWidthVarThresholdSliver</l>
+<l>hContrastVarThresholdSliver := 30</l>
+<l>hScaleVarThresholdSliver := 0.1</l>
+<l>hIsQuadrantSliver := false</l>
+<l>hMinAreaDefectQuaDrantSliver := 15</l>
+<l>hMinGrayDefectQuaDrantSliver := 160</l>
+<l>hMaxGrayDefectQuaDrantSliver := 230</l>
+<l>hMinDiffGrayQuadrantSliver := 6</l>
+<l>hIsSliver := false</l>
+<l>hIsStepMode := 1</l>
+<l>hIsQuadrantSliver := false</l>
+<l>DebugMessageOut :=[]</l>
+<l>_HP_DarkEncap_Inspect_QuadrantSliver (InspectImage, hROIInspectSliver,\
+                                          hROIInspectQuadrantSliver, hRegionDefectQuadrantSliver,\
+                                          DebugImageOut, DebugRegionOut, RegionMidDie,\
+                                          RegionVarAllSliver, RegionVarMidSliver,\
+                                          LinesContourDefect, RegionAllWhite, hOffsetSliver,\
+                                          hGrayAllWhiteSliver, hContrastGaussThresholdSliver, \
+                                          hLineWidthThresholdSliver, hWidthVarThresholdSliver,\
+                                          hHeightVarThresholdSliver, hContrastVarThresholdSliver,\
+                                          hScaleVarThresholdSliver, hMinAreaDefectQuaDrantSliver, \
+                                          hMinGrayDefectQuaDrantSliver, hMaxGrayDefectQuaDrantSliver, \
+                                          hMinDiffGrayQuadrantSliver, hIsStepMode, hIsQuadrantSliver, \
+                                          DebugMessageOut)</l>
+<c></c>
+<l>hMinAreaDefectSliver := 50</l>
+<l>hMinGrayDefectSliver := 185</l>
+<l>hMaxGrayDefectSliver := 220</l>
+<l>hSmallLengthDefectSliver := 220</l>
+<l>dev_display (RegionWhite)</l>
+<l>_HP_DarkEncap_Inspect_Sliver (InspectImage, hROIInspectSliver, hRegionDefectQuadrantSliver, \
+                              RegionVarAllSliver, RegionVarMidSliver,\
+                              RegionWhite, RegionMidDie, \
+                              LinesContourDefect, RegionAllWhite, \
+                              hRegionDefectSliver, DebugImageOut, DebugRegionOut, \
+                              hMinAreaDefectSliver, hMinGrayDefectSliver, hMaxGrayDefectSliver,\
+                              hSmallLengthDefectSliver, hIsStepMode, hIsSliver, \
+                              DebugMessageOut)</l>
+<c></c>
+<l>set_display_font (WindowHandle, 20, 'mono', 'strue', 'false')</l>
+<l>dev_display (InspectImage)</l>
+<l>dev_disp_text ('Sliver = ' + hIsSliver, 'window', 100, 100, 'black', [], [])</l>
+<l>dev_disp_text ('Quadrant  = ' + hIsQuadrantSliver, 'window', 200, 100, 'black', [], [])</l>
+<l>dev_set_color ('red')</l>
+<l>dev_display (hRegionDefectSliver)</l>
+<l>dev_set_color ('green')</l>
+<l>dev_display (hRegionDefectQuadrantSliver)</l>
+<l>stop()</l>
+<l>endfor</l>
+<c></c>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+<procedure name="_HP_Encap_FindInsideRegion">
+<interface>
+<io>
+<par name="Image" base_type="iconic" dimension="0"/>
+<par name="EncapROIProjection" base_type="iconic" dimension="0"/>
+<par name="TopROIProjection" base_type="iconic" dimension="0"/>
+<par name="BottomROIProjection" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="InsideEncapRegion" base_type="iconic" dimension="0"/>
+</oo>
+</interface>
+<body>
+<l>gen_empty_obj (InsideEncapRegion)</l>
+<c></c>
+<l>reduce_domain (Image, EncapROIProjection, EncapImage)</l>
+<l>threshold (EncapImage, Region1, 210, 255)</l>
+<l>threshold (EncapImage, Region2, 0, 85)</l>
+<l>reduce_domain (EncapImage, TopROIProjection, TopEncapImage)</l>
+<l>threshold (TopEncapImage, Region3, 0, 129)</l>
+<c>    </c>
+<l>reduce_domain (EncapImage, TopROIProjection, TopEncapImage)</l>
+<l>deviation_image (TopEncapImage, ImageDeviation, 3, 3)</l>
+<l>hysteresis_threshold (ImageDeviation, RegionHysteresis1, 20, 20, 30)</l>
+<c></c>
+<l>reduce_domain (EncapImage, BottomROIProjection, BottomEncapImage)</l>
+<l>deviation_image (BottomEncapImage, ImageDeviation, 3, 3)</l>
+<l>hysteresis_threshold (ImageDeviation, RegionHysteresis2, 20, 20, 30)</l>
+<c></c>
+<l>mean_image (Image, ImageMean, 15, 15)</l>
+<l>dyn_threshold (Image, ImageMean, RegionDynThresh, 7, 'dark')</l>
+<c>    </c>
+<l>union2 (RegionDynThresh, Region1, RegionDynThresh)</l>
+<l>union2 (RegionDynThresh, Region2, RegionDynThresh)</l>
+<l>union2 (RegionDynThresh, Region3, RegionDynThresh)</l>
+<l>union2 (RegionDynThresh, RegionHysteresis1, RegionDynThresh)</l>
+<l>union2 (RegionDynThresh, RegionHysteresis2, RegionDynThresh)</l>
+<c></c>
+<c></c>
+<l>opening_circle (RegionDynThresh, RegionOpening1, 1.5)</l>
+<l>closing_circle (RegionOpening1, RegionClosing1, 6.5)</l>
+<c></c>
+<l>connection (RegionClosing1, ConnectedRegions)     </l>
+<l>select_shape (ConnectedRegions, SelectedRegions, 'area', 'and', 800, 99999999)</l>
+<l>union1 (SelectedRegions, RegionUnion1)</l>
+<c></c>
+<l>difference (EncapROIProjection, RegionUnion1, RegionDifference)</l>
+<l>connection (RegionDifference, ConnectedRegions1)</l>
+<l>select_gray (ConnectedRegions1, Image, SelectedRegions1, 'area', 'and', 1.20315e+007, 99e+007)</l>
+<c></c>
+<l>fill_up (SelectedRegions1, RegionFillUp2)</l>
+<l>opening_circle (RegionFillUp2, RegionOpening2, 11)</l>
+<l>closing_circle (RegionOpening2, InsideEncapRegion, 21)</l>
+<c></c>
+<l>return ()</l>
+</body>
+<docu id="_HP_Encap_FindInsideRegion">
+<parameters>
+<parameter id="BottomROIProjection"/>
+<parameter id="EncapROIProjection"/>
+<parameter id="Image"/>
+<parameter id="InsideEncapRegion"/>
+<parameter id="TopROIProjection"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="_HP_Encap_FindEdgeRegion">
+<interface>
+<io>
+<par name="InspectImage" base_type="iconic" dimension="0"/>
+<par name="EncapROIProjection" base_type="iconic" dimension="0"/>
+<par name="TopEdgeMaskROIProjection" base_type="iconic" dimension="0"/>
+<par name="LeftEdgeMaskROIProjection" base_type="iconic" dimension="0"/>
+<par name="RightEdgeMaskROIProjection" base_type="iconic" dimension="0"/>
+<par name="InsideEncapRegion" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="EncapRegion" base_type="iconic" dimension="0"/>
+</oo>
+</interface>
+<body>
+<l>gen_empty_obj (EncapRegion)</l>
+<c></c>
+<c></c>
+<l>union2 (LeftEdgeMaskROIProjection, RightEdgeMaskROIProjection, EdgeMaskROI)</l>
+<l>union2 (EdgeMaskROI, TopEdgeMaskROIProjection, EdgeMaskROI)</l>
+<l>intersection (EdgeMaskROI, EncapROIProjection, RegionIntersection)</l>
+<l>reduce_domain (InspectImage, RegionIntersection, ImageReduced1)</l>
+<c></c>
+<l>threshold (ImageReduced1, Regions, 0, 85)    </l>
+<l>dilation_circle (InsideEncapRegion, RegionDilation, 5.5)</l>
+<l>union2 (Regions, RegionDilation, RegionUnion)</l>
+<l>closing_circle (RegionUnion, RegionClosing4, 4.5)</l>
+<l>fill_up (RegionClosing4, RegionFillUp4)</l>
+<l>opening_circle (RegionFillUp4, RegionOpening, 3.5)</l>
+<l>connection (RegionOpening, ConnectedRegions2)    </l>
+<l>select_gray (ConnectedRegions2, InspectImage, SelectedRegions2, 'area', 'and', 1.20315e+007, 99e+007)</l>
+<l>closing_circle (SelectedRegions2, RegionClosing, 7.5)</l>
+<l>fill_up (RegionClosing, RegionFillUp3)</l>
+<l>erosion_circle (RegionFillUp3, RegionErosion, 5.5)</l>
+<l>fill_up (RegionErosion, EncapRegion)</l>
+<c></c>
+<l>return ()</l>
+</body>
+<docu id="_HP_Encap_FindEdgeRegion">
+<parameters>
+<parameter id="EncapROIProjection"/>
+<parameter id="EncapRegion"/>
+<parameter id="InsideEncapRegion"/>
+<parameter id="InspectImage"/>
+<parameter id="LeftEdgeMaskROIProjection"/>
+<parameter id="RightEdgeMaskROIProjection"/>
+<parameter id="TopEdgeMaskROIProjection"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="_HP_Encap_DarkBlue_Tracing_Local">
+<interface>
+<io>
+<par name="Image" base_type="iconic" dimension="0"/>
+<par name="DBEncapExtractROIProjection" base_type="iconic" dimension="0"/>
+<par name="DBEncapInnerROIProjection" base_type="iconic" dimension="0"/>
+<par name="DBEncapFlexEdgeMaskROIProjection" base_type="iconic" dimension="0"/>
+<par name="DBEncapTopEdgeMaskROIProjection" base_type="iconic" dimension="0"/>
+<par name="DBEncapBottomEdgeMaskROIProjection" base_type="iconic" dimension="0"/>
+<par name="DBEncapLeftEdgeMaskROIProjection" base_type="iconic" dimension="0"/>
+<par name="DBEncapRightEdgeMaskROIProjection" base_type="iconic" dimension="0"/>
+<par name="DBEncapMaskTracingROIProjection" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="EncapRegion" base_type="iconic" dimension="0"/>
+<par name="DebugImageOut" base_type="iconic" dimension="0"/>
+<par name="DebugRegionOut" base_type="iconic" dimension="0"/>
+</oo>
+<ic>
+<par name="IsStepMode" base_type="ctrl" dimension="0"/>
+<par name="DBEncapEdgeEncapContrast" base_type="ctrl" dimension="0"/>
+<par name="DBEncapEdgeFlexContrast" base_type="ctrl" dimension="0"/>
+<par name="DBEncapMinEncapContrast" base_type="ctrl" dimension="0"/>
+<par name="DBEncapMaxEncapContrast" base_type="ctrl" dimension="0"/>
+<par name="DBEncapBoundaryOffset" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="IsPass" base_type="ctrl" dimension="0"/>
+<par name="DebugMessageOut" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<c>***Initialization</c>
+<l>gen_empty_obj (EncapRegion)</l>
+<l>IsPass := true</l>
+<c>***Debug Parameter</c>
+<l>gen_empty_obj (DebugImageOut)</l>
+<l>gen_empty_obj (DebugRegionOut)</l>
+<l>DebugMessageOut :=  [] </l>
+<c></c>
+<c>* Create Encap ROI</c>
+<l>union2 (DBEncapExtractROIProjection, DBEncapFlexEdgeMaskROIProjection, EncapExtractROI)</l>
+<l>dilation_rectangle1 (EncapExtractROI, EncapROI, 100, 100)</l>
+<l>if (IsStepMode)</l>
+<l>     Message:=['Prepare Inspection - Region To Extract Encap Location']</l>
+<l>    _FCI_DebugParameters (Image, EncapROI, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c></c>
+<c>***** Step 1: Find inside region of Encap *****</c>
+<c>    </c>
+<l>reduce_domain (Image, EncapROI, EncapImage)</l>
+<c></c>
+<c>* Threshold to get white region of Encap</c>
+<l>dilation_rectangle1 (DBEncapFlexEdgeMaskROIProjection, WhiteRegionROI, 100, 1)</l>
+<l>union2 (WhiteRegionROI, DBEncapBottomEdgeMaskROIProjection, WhiteRegionROI)</l>
+<l>reduce_domain (EncapImage, WhiteRegionROI, WhiteImageReduced)</l>
+<l>threshold (WhiteImageReduced, Region1, 210, 255)</l>
+<c></c>
+<c>* Threshold to get black region of Encap</c>
+<l>threshold (EncapImage, Region2, 0, DBEncapEdgeEncapContrast)</l>
+<l>if (IsStepMode)</l>
+<l>     Message:=['Prepare Inspection - Threshold To Get Black Region Of Encap']</l>
+<l>     _FCI_DebugParameters (EncapImage, Region2, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c></c>
+<c>* Threshold to get black region between Encap and Flex</c>
+<l>dilation_rectangle1 (DBEncapFlexEdgeMaskROIProjection, FlexEdgeMaskROIProjectionRegionDilation, 50, 50)</l>
+<l>reduce_domain (EncapImage, FlexEdgeMaskROIProjectionRegionDilation, FlexImage)</l>
+<l>threshold (FlexImage, Region3, 0, DBEncapEdgeFlexContrast)</l>
+<l>if (IsStepMode)</l>
+<l>     Message:=['Prepare Inspection - Threshold To Get Black Region Between Encap And Flex']</l>
+<l>     _FCI_DebugParameters (EncapImage, Region3, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c></c>
+<c>* Threshold to get top edge of Encap</c>
+<l>deviation_image (FlexImage, ImageDeviation, 3, 3)</l>
+<l>hysteresis_threshold (ImageDeviation, RegionHysteresis1, 25, 25, 60)</l>
+<l>closing_rectangle1 (RegionHysteresis1, RegionClosing, 50, 1)</l>
+<l>dilation_rectangle1 (RegionClosing, RegionDilation, 11, 1)</l>
+<l>if (IsStepMode)</l>
+<l>     Message:=['Prepare Inspection - Threshold To Top Edge Of Encap']</l>
+<l>     _FCI_DebugParameters (EncapImage, RegionHysteresis1, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c></c>
+<c>* Threshold to get bottom edge of Encap</c>
+<l>reduce_domain (EncapImage, DBEncapBottomEdgeMaskROIProjection, BottomEncapImage)</l>
+<l>deviation_image (BottomEncapImage, ImageDeviation, 11, 11)</l>
+<l>hysteresis_threshold (ImageDeviation, RegionHysteresis2, 25, 25, 60)</l>
+<l>opening_rectangle1 (RegionHysteresis2, RegionHysteresis2, 10, 10)</l>
+<l>if (IsStepMode)</l>
+<l>     Message:=['Prepare Inspection - Threshold To Get Bottom Edge Of Encap']</l>
+<l>     _FCI_DebugParameters (EncapImage, RegionHysteresis2, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c></c>
+<c>* Threshold to get all contamination to ignoring when finding Encap Region</c>
+<l>threshold (EncapImage, ContaminationRegion, 230, 255)</l>
+<l>closing_circle (ContaminationRegion, ContaminationRegionClosing, 5.5)</l>
+<l>connection (ContaminationRegionClosing, ContaminationConnectedRegions)</l>
+<l>select_shape (ContaminationConnectedRegions, ContaminationSelectedRegions, 'area', 'and', 0, 1000)</l>
+<l>dilation_circle (ContaminationSelectedRegions, IgnoredContamination, 10.5)</l>
+<c></c>
+<l>erosion_rectangle1 (DBEncapExtractROIProjection, RegionErosion, 30, 30)</l>
+<l>difference (RegionErosion, DBEncapBottomEdgeMaskROIProjection, RegionDifference)</l>
+<l>intersection (IgnoredContamination, RegionDifference, IgnoredContamination)</l>
+<l>if (IsStepMode)</l>
+<l>     Message:=['Prepare Inspection - Ignored All Contamination Inside Encap For Tracing']</l>
+<l>     _FCI_DebugParameters (EncapImage, IgnoredContamination, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c></c>
+<c>* Using dynamic threshold to get outside of Encap</c>
+<l>mean_image (EncapImage, ImageMean, 13, 13)</l>
+<l>dyn_threshold (EncapImage, ImageMean, RegionDynThresh, 7, 'dark') </l>
+<c></c>
+<l>union2 (RegionDynThresh, Region1, RegionDynThresh)</l>
+<l>union2 (RegionDynThresh, RegionHysteresis2, RegionDynThresh)</l>
+<l>union2 (RegionDynThresh, Region2, RegionDynThresh)</l>
+<l>union2 (RegionDynThresh, Region3, RegionDynThresh)</l>
+<l>union2 (RegionDynThresh, RegionHysteresis1, RegionDynThresh)</l>
+<l>difference (RegionDynThresh, DBEncapInnerROIProjection, RegionDynThresh)</l>
+<l>difference (RegionDynThresh, IgnoredContamination, RegionDynThresh)</l>
+<c></c>
+<l>opening_circle (RegionDynThresh, RegionDynOpening, 1.5)</l>
+<l>closing_circle (RegionDynOpening, RegionDynClosing, 5.5)</l>
+<l>connection (RegionDynClosing, RegionDynConnectedRegions)    </l>
+<l>select_shape (RegionDynConnectedRegions, RegionDynSelectedRegions, 'area', 'and', 800, 99999999)</l>
+<l>union1 (RegionDynSelectedRegions, RegionDynUnion)</l>
+<c></c>
+<c>* Difference EncapROI with OusideEncapRegion to get Inside Encap Region</c>
+<l>difference (EncapROI, RegionDynUnion, InsideEncapRegionDifference)  </l>
+<l>opening_circle (InsideEncapRegionDifference, InsideEncapRegionOpening, 9.5)</l>
+<l>connection (InsideEncapRegionOpening, InsideEncapConnectedRegions)</l>
+<c></c>
+<l>if (IsStepMode)</l>
+<l>     Message:=['Prepare Inspection - All Regions are possible Encap Region']</l>
+<l>     _FCI_DebugParameters (EncapImage, InsideEncapConnectedRegions, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c></c>
+<l>* select_gray (InsideEncapConnectedRegions, EncapImage, InsideEncapSelectedRegions, 'area', 'and', 0.50315e+007, 99e+007)</l>
+<l>select_gray (InsideEncapConnectedRegions, EncapImage, InsideEncapSelectedRegions, 'mean', 'and', DBEncapMinEncapContrast, DBEncapMaxEncapContrast)</l>
+<l>* select_shape_std (InsideEncapSelectedRegions, InsideEncapSelectedRegions, 'max_area', 70)</l>
+<l>select_shape (InsideEncapSelectedRegions, InsideEncapSelectedRegions, 'row2', 'and', 997.14, 2000)</l>
+<c></c>
+<l>union1 (InsideEncapSelectedRegions, InsideEncapRegionUnion)</l>
+<l>closing_circle (InsideEncapRegionUnion, InsideEncapRegion, 15)</l>
+<l>fill_up (InsideEncapRegion, InsideEncapRegion)</l>
+<c></c>
+<l>if (IsStepMode)</l>
+<l>     Message:=['Prepare Inspection - Inside Encap Region']</l>
+<l>     _FCI_DebugParameters (EncapImage, InsideEncapRegion, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c></c>
+<c>***** Step 1: Find edge region of Encap *****</c>
+<c></c>
+<c>* Threshold to find edge of Encap</c>
+<l>union2 (DBEncapLeftEdgeMaskROIProjection, DBEncapRightEdgeMaskROIProjection, EdgeROIRegionUnion)</l>
+<l>union2 (EdgeROIRegionUnion, DBEncapTopEdgeMaskROIProjection, EdgeROIRegionUnion)</l>
+<l>intersection (EdgeROIRegionUnion, DBEncapExtractROIProjection, EdgeROIRegionIntersection)</l>
+<l>difference (EdgeROIRegionIntersection, DBEncapFlexEdgeMaskROIProjection, EdgeROIRegion)</l>
+<l>reduce_domain (Image, EdgeROIRegion, EdgeEncapImage)</l>
+<c></c>
+<c>* Threshold to get Edge region of Encap</c>
+<l>threshold (EdgeEncapImage, EdgeRegion, 0, DBEncapEdgeEncapContrast)</l>
+<c></c>
+<c>* Get all Contamination</c>
+<l>difference (EdgeROIRegion, DBEncapBottomEdgeMaskROIProjection, ContaminationMask)</l>
+<l>reduce_domain (Image, ContaminationMask, ImageReduced)</l>
+<l>threshold (ImageReduced, Regions, 210, 255)</l>
+<l>closing_circle (Regions, ContaminationRegion, 3.5)</l>
+<c></c>
+<c>* Expand inside Encap Region to Uinon with Edge Region of Encap</c>
+<l>dilation_circle (InsideEncapRegion, InsideEncapRegionDilation, 13.5)</l>
+<l>if (IsStepMode)</l>
+<l>     Message:=['Prepare Inspection - Expand Inside Encap Region']</l>
+<l>     _FCI_DebugParameters (EncapImage, InsideEncapRegionDilation, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c></c>
+<c>* Union Edge Region and Contamination Region with Inside Encap Region</c>
+<l>union2 (InsideEncapRegionDilation, EdgeRegion, EncapRegionUnion)</l>
+<l>union2 (EncapRegionUnion, ContaminationRegion, EncapRegionUnion)</l>
+<l>if (IsStepMode)</l>
+<l>     Message:=['Prepare Inspection - Union Edge Of Encap With Inside Encap Region']</l>
+<l>     _FCI_DebugParameters (EncapImage, EncapRegionUnion, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c></c>
+<c>* Remove some regions are not Encap region</c>
+<l>closing_circle (EncapRegionUnion, EncapRegionClosing, 15.5)</l>
+<l>fill_up (EncapRegionClosing, EncapRegionFillUp)</l>
+<l>opening_circle (EncapRegionFillUp, EncapRegionOpening, 11.5)</l>
+<l>connection (EncapRegionOpening, EncapConnectedRegions)  </l>
+<l>* select_gray (ConnectedRegions2, Image, SelectedRegions2, 'area', 'and', 1.20315e+007, 99e+007)</l>
+<l>select_gray (EncapConnectedRegions, Image, EncapRegionSelectedRegions, 'mean', 'and', DBEncapMinEncapContrast, DBEncapMaxEncapContrast)</l>
+<l>if (IsStepMode)</l>
+<l>     Message:=['Prepare Inspection - Remove Region Is Not Encap']</l>
+<l>     _FCI_DebugParameters (EncapImage, EncapRegionSelectedRegions, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c></c>
+<c>* Restruct Encap Region</c>
+<l>closing_circle (EncapRegionSelectedRegions, EncapRegionSelectedRegionClosing, 5.5)</l>
+<l>erosion_circle (EncapRegionSelectedRegionClosing, EncapRegionSelectedRegionErosion, 13.5)</l>
+<l>opening_circle (EncapRegionSelectedRegionErosion, EncapRegionSelectedRegionOpening, 11.5)</l>
+<l>fill_up (EncapRegionSelectedRegionOpening, EncapRegionSelectedRegionFillup)</l>
+<l>intersection (EncapRegionSelectedRegionFillup, EncapExtractROI, EncapRegion)</l>
+<l>opening_circle (EncapRegion, EncapRegionOpening, 5.5)</l>
+<l>connection (EncapRegionOpening, EncapRegion)</l>
+<l>select_shape_std (EncapRegion, EncapRegion, 'max_area', 30)</l>
+<c></c>
+<l>erosion_circle (EncapRegion, EncapRegion, DBEncapBoundaryOffset)</l>
+<c></c>
+<l>if (IsStepMode)</l>
+<l>     Message:=['Final Encap Region']</l>
+<l>     _FCI_DebugParameters (EncapImage, EncapRegion, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c></c>
+<l>area_center (EncapRegion, Area, Row, Column)</l>
+<l>if (Area == 0)</l>
+<l>    IsPass := false</l>
+<l>endif</l>
+<c>    </c>
+<l>return ()</l>
+</body>
+<docu id="_HP_Encap_DarkBlue_Tracing_Local">
+<parameters>
+<parameter id="DBEncapBottomEdgeMaskROIProjection"/>
+<parameter id="DBEncapBoundaryOffset"/>
+<parameter id="DBEncapEdgeEncapContrast"/>
+<parameter id="DBEncapEdgeFlexContrast"/>
+<parameter id="DBEncapExtractROIProjection"/>
+<parameter id="DBEncapFlexEdgeMaskROIProjection"/>
+<parameter id="DBEncapInnerROIProjection"/>
+<parameter id="DBEncapLeftEdgeMaskROIProjection"/>
+<parameter id="DBEncapMaskTracingROIProjection"/>
+<parameter id="DBEncapMaxEncapContrast"/>
+<parameter id="DBEncapMinEncapContrast"/>
+<parameter id="DBEncapRightEdgeMaskROIProjection"/>
+<parameter id="DBEncapTopEdgeMaskROIProjection"/>
+<parameter id="DebugImageOut"/>
+<parameter id="DebugMessageOut"/>
+<parameter id="DebugRegionOut"/>
+<parameter id="EncapRegion"/>
+<parameter id="Image"/>
+<parameter id="IsPass"/>
+<parameter id="IsStepMode"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="_HP_DarkBlue_Encap_Inspection_VOID">
+<interface>
+<io>
+<par name="Image" base_type="iconic" dimension="0"/>
+<par name="hEncapRegion" base_type="iconic" dimension="0"/>
+<par name="hROIInspect" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="DebugImageOut" base_type="iconic" dimension="0"/>
+<par name="DebugRegionOut" base_type="iconic" dimension="0"/>
+<par name="VoidDefectRegions" base_type="iconic" dimension="0"/>
+</oo>
+<ic>
+<par name="hScaleContrastEncap" base_type="ctrl" dimension="0"/>
+<par name="hValueContrastDefect" base_type="ctrl" dimension="0"/>
+<par name="hScaleContrastDefect" base_type="ctrl" dimension="0"/>
+<par name="hWidthLocalSearch" base_type="ctrl" dimension="0"/>
+<par name="hHeightLocalSearch" base_type="ctrl" dimension="0"/>
+<par name="hOffsetEncap" base_type="ctrl" dimension="0"/>
+<par name="hClosingRadiusDefect" base_type="ctrl" dimension="0"/>
+<par name="hMinAreaDefect" base_type="ctrl" dimension="0"/>
+<par name="hCircularityDefect" base_type="ctrl" dimension="0"/>
+<par name="hHWRatioDefect" base_type="ctrl" dimension="0"/>
+<par name="hInnerDefectPercent" base_type="ctrl" dimension="0"/>
+<par name="hOffsetCheckDefect" base_type="ctrl" dimension="0"/>
+<par name="hMaxContrastInOutDefect" base_type="ctrl" dimension="0"/>
+<par name="hMinGrayDefect" base_type="ctrl" dimension="0"/>
+<par name="hMaxGrayDefect" base_type="ctrl" dimension="0"/>
+<par name="hMaxDeviationInnerDefect" base_type="ctrl" dimension="0"/>
+<par name="IsStepMode" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="DebugMessageOut" base_type="ctrl" dimension="0"/>
+<par name="IsPass" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<c> ***Debug Parameter</c>
+<l>gen_empty_obj (DebugImageOut)</l>
+<l>gen_empty_obj (DebugRegionOut)</l>
+<l>gen_empty_obj (VoidDefectRegions)</l>
+<l>DebugMessageOut :=  []</l>
+<l>IsPass := 1</l>
+<c></c>
+<c>* Filter</c>
+<l>emphasize (Image, ImageScaledX,3, hHeightLocalSearch,0.2*hScaleContrastEncap)</l>
+<l>emphasize (Image, ImageScaledY, hWidthLocalSearch,3,0.1*hScaleContrastEncap)</l>
+<l>emphasize (Image, ImageScaled, hWidthLocalSearch, hHeightLocalSearch,0.1*hScaleContrastEncap)</l>
+<l>gauss_filter (ImageScaled, ImageGauss, 3)</l>
+<l>* mean_image (ImageScaledX, ImageMeanX, 1, 3)</l>
+<l>* mean_image (ImageScaledY, ImageMeanY, 3, 1)</l>
+<l>reduce_domain (ImageGauss, hEncapRegion, ImageReducedXY)</l>
+<l>reduce_domain (ImageScaledX, hEncapRegion, ImageReducedX)</l>
+<l>reduce_domain (ImageScaledY, hEncapRegion, ImageReducedY)</l>
+<l>* reduce_domain (ImageReduced2, hROIInspect, ImageReduced4)</l>
+<c>* Var Threshold Method</c>
+<l>var_threshold (ImageReducedXY, RegionVarXYWhite, hWidthLocalSearch, hHeightLocalSearch, 0.01*hScaleContrastDefect, hValueContrastDefect, 'light')</l>
+<l>var_threshold (ImageReducedY, RegionVarYWhite, hWidthLocalSearch, hHeightLocalSearch/4, 0.01*hScaleContrastDefect, hValueContrastDefect, 'light')</l>
+<l>var_threshold (ImageReducedX, RegionVarXWhite, hWidthLocalSearch/4, hHeightLocalSearch, 0.01*hScaleContrastDefect, 0.75*hValueContrastDefect, 'light')</l>
+<c>* Dark Var</c>
+<l>var_threshold (ImageReducedXY, RegionVarYDark, hWidthLocalSearch/2, hHeightLocalSearch, 0.01*hScaleContrastDefect, hValueContrastDefect, 'dark')</l>
+<l>boundary (hEncapRegion, RegionBorder, 'inner')</l>
+<l>dilation_circle (RegionBorder, RegionDilation1, 10.5)</l>
+<l>connection (RegionVarYDark, ConnectedRegions3)</l>
+<l>select_shape_proto (ConnectedRegions3, RegionDilation1, SelectedRegionsDark, 'overlaps_rel',0, 0)</l>
+<l>concat_obj (RegionVarXWhite, SelectedRegionsDark, ObjectsConcat2)</l>
+<l>concat_obj (ObjectsConcat2, RegionVarXYWhite, ObjectsConcat)</l>
+<l>concat_obj (ObjectsConcat, RegionVarYWhite, ObjectsConcat1)</l>
+<l>union1 (ObjectsConcat1, RegionVarXY)</l>
+<l>connection (RegionVarXY, ConnectedRegions5)</l>
+<l>count_obj (ConnectedRegions5, NumberVarRegion)</l>
+<l>if(NumberVarRegion &gt; 0)</l>
+<l>    if (IsStepMode)</l>
+<l>        Message:=['All Possible Defect Region Based On Var Threshold']</l>
+<l>        _FCI_DebugParameters (Image, RegionVarXY, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>    endif   </l>
+<l>endif</l>
+<c>* Deviation Method</c>
+<l>deviation_image (ImageReducedXY, ImageDeviation, 11, 11)</l>
+<l>threshold (ImageDeviation, Region3,hValueContrastDefect, 255)</l>
+<l>connection (Region3, ConnectedRegions6)</l>
+<l>count_obj (ConnectedRegions6, NumberDeviateRegion)</l>
+<l>if(NumberDeviateRegion &gt; 0)</l>
+<l>    if (IsStepMode)</l>
+<l>        Message:=['All Possible Defect Region Based On Deviation Threshold']</l>
+<l>        _FCI_DebugParameters (Image, Region3, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>    endif   </l>
+<l>endif</l>
+<l>select_shape (ConnectedRegions6, SelectedRegions4, 'area', 'and', 0,2000)</l>
+<l>select_shape_proto (SelectedRegions4, RegionVarXY, SelectedRegions10, 'overlaps_abs', 1,99999)</l>
+<l>union2 (SelectedRegions10, ConnectedRegions5, RegionUnion3)</l>
+<l>union1 (RegionUnion3, RegionUnionVarDeviation)</l>
+<c>* Offset Encap region to remove  boundary</c>
+<l>erosion_circle (hEncapRegion, RegionErosion, hOffsetEncap)</l>
+<l>intersection (hROIInspect, RegionErosion, RegionIntersection)</l>
+<l>if (IsStepMode)</l>
+<l>     Message:=['Offset Encap Region to remove Encap Border Noise ']</l>
+<l>     _FCI_DebugParameters (Image, RegionIntersection, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif   </l>
+<l>intersection (RegionUnionVarDeviation, RegionIntersection, RegionIntersection2)</l>
+<l>count_obj (RegionIntersection2, Number4)</l>
+<l>if (Number4 = 0) </l>
+<l>  return()</l>
+<l>endif</l>
+<l>if (IsStepMode)</l>
+<l>        Message:=['All Possible Defect Region before Union White Defect Region']</l>
+<l>        _FCI_DebugParameters (Image, RegionIntersection2, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif </l>
+<c>* Get boundary White Region to union with Var Region</c>
+<l> reduce_domain (Image, RegionIntersection, ImageReduced)</l>
+<c>** Get type Error </c>
+<l>connection (RegionIntersection2, ConnectedRegions1)</l>
+<l>select_gray (ConnectedRegions1, ImageReduced, SelectedRegions5, 'mean', 'and', hMinGrayDefect, 255)</l>
+<l>count_obj (SelectedRegions5, NumErrorSelectGray)</l>
+<l>if (NumErrorSelectGray = 0)</l>
+<l>    return()</l>
+<l>endif</l>
+<l>union1 (SelectedRegions5, RegionUnion)</l>
+<l>closing_circle (RegionUnion, RegionClosing, hClosingRadiusDefect)</l>
+<c></c>
+<l>* union1 (RegionClosing, RegionUnion2)</l>
+<l>connection (RegionClosing, ConnectedRegions2)  </l>
+<l>fill_up (ConnectedRegions2, RegionFillUp)</l>
+<l>select_shape (RegionFillUp, SelectedRegions7, ['circularity', 'anisometry'] , 'and', [ hCircularityDefect, 0] , [ 1, hHWRatioDefect])</l>
+<l>select_shape (SelectedRegions7, SelectedRegions8, 'area', 'and', hMinAreaDefect, 999999)</l>
+<l>* shape_trans (SelectedRegions8, RegionTrans1, 'ellipse')</l>
+<l>union1 (SelectedRegions8, RegionUnion1)</l>
+<l>connection (RegionUnion1, ConnectedRegions)</l>
+<c>* Recheck overkill with Border encap</c>
+<l>dilation_circle (hEncapRegion, RegionDilation2, 10)</l>
+<c>*Remove outer error     </c>
+<l>select_shape_proto (ConnectedRegions, RegionDilation2, AllRegionInnerError, 'overlaps_rel', hInnerDefectPercent, 100)</l>
+<l>count_obj (AllRegionInnerError, NumberErrorSelected)</l>
+<l>if ( NumberErrorSelected = 0)</l>
+<l>    return()</l>
+<l>endif</l>
+<l>if (IsStepMode)</l>
+<l>    Message:=['All Error before determine type of error ']</l>
+<l>    _FCI_DebugParameters (Image, AllRegionInnerError, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c>* Get type of Defect </c>
+<c></c>
+<l>region_features (AllRegionInnerError, 'inner_radius', InnerRadiuss)</l>
+<l>region_features (AllRegionInnerError, 'area', Value)</l>
+<l>for k := 1  to NumberErrorSelected by 1</l>
+<l>    select_obj (AllRegionInnerError, ObjectSelected, k)</l>
+<l>    shape_trans (ObjectSelected, RegionTrans, 'convex')</l>
+<c></c>
+<l>    erosion_circle (RegionTrans, RegionErosion1, 0.01*hOffsetCheckDefect * InnerRadiuss[k-1])</l>
+<l>    intensity (RegionErosion1, ImageReduced, MeanInnner, DeviationInnner)</l>
+<l>    dilation_circle (RegionTrans, RegionDilation, 0.01*hOffsetCheckDefect* InnerRadiuss[k-1])</l>
+<l>    difference (RegionDilation, ObjectSelected, RegionDifference)</l>
+<l>    intensity (RegionDifference, ImageReduced, MeanOuter, DeviationOuter)</l>
+<l>    intensity (RegionTrans, ImageReduced, MeanDefect, Deviation)</l>
+<c></c>
+<l>    reduce_domain (ImageReduced, RegionTrans, ImageReduced1)</l>
+<l>    threshold (ImageReduced1, RegionDark, 0, 0.75*hMinGrayDefect)</l>
+<l>    region_features (RegionDark, 'area', ValueDark)</l>
+<c>    </c>
+<l>    reduce_domain (ImageReduced1, RegionTrans, ImageReduced3)</l>
+<l>    threshold (ImageReduced1, RegionWhite, 240, 255)</l>
+<l>    region_features (RegionWhite, 'area', ValueWhite)</l>
+<c>   </c>
+<l>    if (MeanInnner &gt; hMaxGrayDefect or abs(MeanInnner - MeanOuter) &gt; hMaxContrastInOutDefect)</l>
+<l>    elseif (DeviationInnner &gt; hMaxDeviationInnerDefect or  ValueDark/Value[k-1] &gt; 0.05 or ValueDark &gt; 50 or ValueWhite/Value[k-1] &gt; 0.1)</l>
+<l>    else</l>
+<l>        concat_obj (VoidDefectRegions, RegionDilation, VoidDefectRegions)</l>
+<l>    endif</l>
+<l>    set_display_font (200000, 16, 'mono', 'true', 'false')</l>
+<l>    dev_disp_text (' DeviationInnner = '+DeviationInnner+ 'Delta = ' + abs(MeanInnner - MeanOuter)\
+                    + 'Mean=  '+ MeanInnner,'window', 400, 0, 'black', [], [])</l>
+<c></c>
+<l>endfor</l>
+<l>count_obj (VoidDefectRegions, Number5)</l>
+<l>if ( Number5 &gt;0 )</l>
+<l>         IsPass := 0</l>
+<l>    if (IsStepMode)</l>
+<l>        Message:=['Void defect']</l>
+<l>        _FCI_DebugParameters (Image, VoidDefectRegions, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>    endif</l>
+<l>endif</l>
+<c></c>
+<l>return ()</l>
+<l>return ()</l>
+</body>
+<docu id="_HP_DarkBlue_Encap_Inspection_VOID">
+<parameters>
+<parameter id="DebugImageOut"/>
+<parameter id="DebugMessageOut"/>
+<parameter id="DebugRegionOut"/>
+<parameter id="Image"/>
+<parameter id="IsPass"/>
+<parameter id="IsStepMode"/>
+<parameter id="VoidDefectRegions"/>
+<parameter id="hCircularityDefect"/>
+<parameter id="hClosingRadiusDefect"/>
+<parameter id="hEncapRegion"/>
+<parameter id="hHWRatioDefect"/>
+<parameter id="hHeightLocalSearch"/>
+<parameter id="hInnerDefectPercent"/>
+<parameter id="hMaxContrastInOutDefect"/>
+<parameter id="hMaxDeviationInnerDefect"/>
+<parameter id="hMaxGrayDefect"/>
+<parameter id="hMinAreaDefect"/>
+<parameter id="hMinGrayDefect"/>
+<parameter id="hOffsetCheckDefect"/>
+<parameter id="hOffsetEncap"/>
+<parameter id="hROIInspect"/>
+<parameter id="hScaleContrastDefect"/>
+<parameter id="hScaleContrastEncap"/>
+<parameter id="hValueContrastDefect"/>
+<parameter id="hWidthLocalSearch"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="disp_continue_message">
+<interface>
+<ic>
+<par name="WindowHandle" base_type="ctrl" dimension="0"/>
+<par name="Color" base_type="ctrl" dimension="0"/>
+<par name="Box" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays 'Press Run (F5) to continue' in the</c>
+<c>* lower right corner of the screen.</c>
+<c>* It uses the procedure disp_message.</c>
+<c>* </c>
+<c>* Input parameters:</c>
+<c>* WindowHandle: The window, where the text shall be displayed</c>
+<c>* Color: defines the text color.</c>
+<c>*    If set to '' or 'auto', the currently set color is used.</c>
+<c>* Box: If set to 'true', the text is displayed in a box.</c>
+<c>* </c>
+<c>* Convert the parameter Box to generic parameters.</c>
+<l>GenParamName := []</l>
+<l>GenParamValue := []</l>
+<l>if (|Box| &gt; 0)</l>
+<l>    if (Box[0] == 'false')</l>
+<c>        * Display no box</c>
+<l>        GenParamName := [GenParamName,'box']</l>
+<l>        GenParamValue := [GenParamValue,'false']</l>
+<l>    elseif (Box[0] != 'true')</l>
+<c>        * Set a color other than the default.</c>
+<l>        GenParamName := [GenParamName,'box_color']</l>
+<l>        GenParamValue := [GenParamValue,Box[0]]</l>
+<l>    endif</l>
+<l>endif</l>
+<l>if (|Box| &gt; 1)</l>
+<l>    if (Box[1] == 'false')</l>
+<c>        * Display no shadow.</c>
+<l>        GenParamName := [GenParamName,'shadow']</l>
+<l>        GenParamValue := [GenParamValue,'false']</l>
+<l>    elseif (Box[1] != 'true')</l>
+<c>        * Set a shadow color other than the default.</c>
+<l>        GenParamName := [GenParamName,'shadow_color']</l>
+<l>        GenParamValue := [GenParamValue,Box[1]]</l>
+<l>    endif</l>
+<l>endif</l>
+<c>* </c>
+<l>if (Color == '')</l>
+<c>    * disp_text does not accept an empty string for Color.</c>
+<l>    Color := []</l>
+<l>endif</l>
+<c>* </c>
+<c>* Display the message.</c>
+<l>ContinueMessage := 'Press Run (F5) to continue'</l>
+<l>disp_text (WindowHandle, ContinueMessage, 'window', 'bottom', 'right', Color, GenParamName, GenParamValue)</l>
+<l>return ()</l>
+</body>
+<docu id="disp_continue_message">
+<abstract lang="en_US">This procedure displays 'Click 'Run' to continue' in a given Color in the lower right corner of the screen.
+If the parameter Box is set to 'true', the text is written within a white box, which is useful on irregular background.</abstract>
+<alternatives>
+<item>disp_message</item>
+<item>write_string</item>
+</alternatives>
+<attention lang="en_US">This procedure uses the procedure disp_message.
+</attention>
+<chapters>
+<item>Graphics</item>
+<item>Text</item>
+</chapters>
+<chapters lang="de_DE">
+<item>Graphik</item>
+<item>Text</item>
+</chapters>
+<chapters lang="en_US">
+<item>Graphics</item>
+<item>Text</item>
+</chapters>
+<example lang="en_US">dev_open_window (0, 0, 512, 512, 'black', WindowHandle)
+set_display_font (WindowHandle, 16, 'mono', 'true', 'false')
+for Index := 1 to 5 by 1
+    disp_message (WindowHandle, 'Step '+Index, 'window', 30*Index, -1, 'black', 'true')
+    disp_continue_message (WindowHandle, 'black', 'true')
+    stop ()
+endfor
+</example>
+<keywords lang="de_DE">
+<item>Fortsetzungs-Nachricht anzeigen</item>
+</keywords>
+<keywords lang="en_US">
+<item>display continue message</item>
+</keywords>
+<library lang="de_DE">MVTec Standard Procedures</library>
+<library lang="en_US">MVTec Standard Procedures</library>
+<predecessor>
+<item>disp_message</item>
+<item>set_display_font</item>
+<item>write_string</item>
+<item>dev_display</item>
+<item>disp_obj</item>
+<item>disp_image</item>
+</predecessor>
+<see_also>
+<item>disp_message</item>
+<item>write_string</item>
+</see_also>
+<short>This procedure displays 'Press 'Run' to continue' in the lower right corner of the screen.</short>
+<short lang="de_DE">This procedure displays 'Click 'Run' to continue' in the lower right corner of the screen.</short>
+<short lang="en_US">This procedure displays 'Click 'Run' to continue' in the lower right corner of the screen.</short>
+<successor>
+<item>stop</item>
+</successor>
+<parameters>
+<parameter id="Box">
+<default_type>string</default_type>
+<default_value>'true'</default_value>
+<description lang="en_US">If set to 'true', the text is written within a white box.</description>
+<multivalue>false</multivalue>
+<sem_type>attribute.value</sem_type>
+<type_list>
+<item>string</item>
+</type_list>
+<value_list>
+<item>'true'</item>
+<item>'false'</item>
+</value_list>
+</parameter>
+<parameter id="Color">
+<default_type>string</default_type>
+<default_value>'black'</default_value>
+<description lang="en_US">Defines the text color. If set to '' or 'auto', the currently set color is used.
+</description>
+<mixed_type>false</mixed_type>
+<multivalue>false</multivalue>
+<sem_type>color</sem_type>
+<type_list>
+<item>string</item>
+</type_list>
+<values>
+<item>'black'</item>
+<item>'blue'</item>
+<item>'yellow'</item>
+<item>'red'</item>
+<item>'green'</item>
+<item>'cyan'</item>
+<item>'magenta'</item>
+<item>'forest green'</item>
+<item>'lime green'</item>
+<item>'coral'</item>
+<item>'slate blue'</item>
+</values>
+</parameter>
+<parameter id="WindowHandle">
+<default_type>integer</default_type>
+<description lang="en_US">The handle of the window, where the text shall be displayed.
+</description>
+<mixed_type>false</mixed_type>
+<multivalue>false</multivalue>
+<sem_type>window</sem_type>
+<type_list>
+<item>integer</item>
+</type_list>
+</parameter>
+</parameters>
+</docu>
+</procedure>
+<procedure name="list_image_files">
+<interface>
+<ic>
+<par name="ImageDirectory" base_type="ctrl" dimension="0"/>
+<par name="Extensions" base_type="ctrl" dimension="0"/>
+<par name="Options" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="ImageFiles" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<c>* This procedure returns all files in a given directory</c>
+<c>* with one of the suffixes specified in Extensions.</c>
+<c>* </c>
+<c>* Input parameters:</c>
+<c>* ImageDirectory: as the name says</c>
+<c>*    If a tuple of directories is given, only the images in the first</c>
+<c>*    existing directory are returned.</c>
+<c>*    If a local directory is not found, the directory is searched</c>
+<c>*    under %HALCONIMAGES%/ImageDirectory. If %HALCONIMAGES% is not set,</c>
+<c>*    %HALCONROOT%/images is used instead.</c>
+<c>* Extensions: A string tuple containing the extensions to be found</c>
+<c>*    e.g. ['png','tif',jpg'] or others</c>
+<c>* If Extensions is set to 'default' or the empty string '',</c>
+<c>*    all image suffixes supported by HALCON are used.</c>
+<c>* Options: as in the operator list_files, except that the 'files'</c>
+<c>*    option is always used. Note that the 'directories' option</c>
+<c>*    has no effect but increases runtime, because only files are</c>
+<c>*    returned.</c>
+<c>* </c>
+<c>* Output parameter:</c>
+<c>* ImageFiles: A tuple of all found image file names</c>
+<c>* </c>
+<l>if (Extensions == [] or Extensions == '' or Extensions == 'default')</l>
+<l>    Extensions := ['ima','tif','tiff','gif','bmp','jpg','jpeg','jp2','jxr','png','pcx','ras','xwd','pbm','pnm','pgm','ppm']</l>
+<c>    * </c>
+<l>endif</l>
+<l>if (ImageDirectory == '')</l>
+<l>    ImageDirectory := '.'</l>
+<l>endif</l>
+<l>get_system ('image_dir', HalconImages)</l>
+<l>get_system ('operating_system', OS)</l>
+<l>if (OS{0:2} == 'Win')</l>
+<l>    HalconImages := split(HalconImages,';')</l>
+<l>else</l>
+<l>    HalconImages := split(HalconImages,':')</l>
+<l>endif</l>
+<l>Directories := ImageDirectory</l>
+<l>for Index := 0 to |HalconImages| - 1 by 1</l>
+<l>    Directories := [Directories,HalconImages[Index] + '/' + ImageDirectory]</l>
+<l>endfor</l>
+<l>tuple_strlen (Directories, Length)</l>
+<l>tuple_gen_const (|Length|, false, NetworkDrive)</l>
+<l>if (OS{0:2} == 'Win')</l>
+<l>    for Index := 0 to |Length| - 1 by 1</l>
+<l>        if (strlen(Directories[Index]) &gt; 1)</l>
+<l>            tuple_str_first_n (Directories[Index], 1, Substring)</l>
+<l>            if (Substring == '//' or Substring == '\\\\')</l>
+<l>                NetworkDrive[Index] := true</l>
+<l>            endif</l>
+<l>        endif</l>
+<l>    endfor</l>
+<l>endif</l>
+<l>ImageFiles := []</l>
+<l>for Index := 0 to |Directories| - 1 by 1</l>
+<l>    file_exists (Directories[Index], FileExists)</l>
+<l>    if (FileExists)</l>
+<l>        list_files (Directories[Index], ['files',Options], AllFiles)</l>
+<l>        ImageFiles := []</l>
+<l>        for i := 0 to |Extensions| - 1 by 1</l>
+<l>            tuple_regexp_select (AllFiles, ['.*' + Extensions[i] + '$','ignore_case'], Selection)</l>
+<l>            ImageFiles := [ImageFiles,Selection]</l>
+<l>        endfor</l>
+<l>        tuple_regexp_replace (ImageFiles, ['\\\\','replace_all'], '/', ImageFiles)</l>
+<l>        if (NetworkDrive[Index])</l>
+<l>            tuple_regexp_replace (ImageFiles, ['//','replace_all'], '/', ImageFiles)</l>
+<l>            ImageFiles := '/' + ImageFiles</l>
+<l>        else</l>
+<l>            tuple_regexp_replace (ImageFiles, ['//','replace_all'], '/', ImageFiles)</l>
+<l>        endif</l>
+<l>        return ()</l>
+<l>    endif</l>
+<l>endfor</l>
+<l>return ()</l>
+</body>
+<docu id="list_image_files">
+<abstract lang="en_US">This procedure returns all files in a given directory ImageDirectory with one of the suffixes specified in Extensions.
+
+If a tuple of directories is given in ImageDirectory, only the images in the first existing directory are returned. If a local directory is not found, the directory is searched under %HALCONIMAGES%/ImageDirectory. If %HALCONIMAGES% is not set, %HALCONROOT%/images is used instead.
+If Extensions is set to 'default' or the empty string '', all image suffixes supported by HALCON are used.
+The parameter Options is used as in the operator list_files (see list_files for details), except that the 'files' option is always used. Note that the 'directories' option has no effect but increases runtime, because only files are returned.</abstract>
+<alternatives>
+<item>list_files</item>
+</alternatives>
+<chapters>
+<item>File</item>
+</chapters>
+<chapters lang="de_DE">
+<item>Datei</item>
+<item>Sonstiges</item>
+</chapters>
+<chapters lang="en_US">
+<item>File</item>
+<item>Misc</item>
+</chapters>
+<example lang="en_US">list_image_files ('.',[] ,[] , ImageFiles)
+for Index := 1 to |ImageFiles|  by 1
+    read_image (Image,ImageFiles[Index-1])
+*     do something
+endfor</example>
+<keywords lang="de_DE">
+<item>Bilddateien auflisten</item>
+</keywords>
+<keywords lang="en_US">
+<item>list image files</item>
+</keywords>
+<library lang="de_DE">MVTec Standard Procedures</library>
+<library lang="en_US">MVTec Standard Procedures</library>
+<predecessor>
+<item>list_files</item>
+</predecessor>
+<see_also>
+<item>list_files</item>
+</see_also>
+<short>Get all image files under the given path</short>
+<short lang="de_DE">Get all image files under the given path</short>
+<short lang="en_US">Get all image files under the given path</short>
+<successor>
+<item>read_image</item>
+</successor>
+<parameters>
+<parameter id="Extensions">
+<default_type>string</default_type>
+<default_value>'default'</default_value>
+<description lang="en_US">A string tuple containing the extensions to be found e.g. ['png','tif',jpg'] or others</description>
+<mixed_type>false</mixed_type>
+<multivalue>optional</multivalue>
+<sem_type>string</sem_type>
+<type_list>
+<item>string</item>
+</type_list>
+<values>
+<item>'ima'</item>
+<item>'bmp'</item>
+<item>'jpg'</item>
+<item>'png'</item>
+<item>'tiff'</item>
+<item>'tif'</item>
+<item>'gif'</item>
+<item>'jpeg'</item>
+<item>'pcx'</item>
+<item>'pgm'</item>
+<item>'ppm'</item>
+<item>'pbm'</item>
+<item>'xwd'</item>
+<item>'pnm'</item>
+</values>
+</parameter>
+<parameter id="ImageDirectory">
+<default_type>string</default_type>
+<description lang="en_US">The image directory</description>
+<mixed_type>false</mixed_type>
+<multivalue>optional</multivalue>
+<sem_type>filename.dir</sem_type>
+<type_list>
+<item>string</item>
+</type_list>
+</parameter>
+<parameter id="ImageFiles">
+<default_type>string</default_type>
+<description lang="en_US">A tuple of all found image file names</description>
+<mixed_type>false</mixed_type>
+<multivalue>optional</multivalue>
+<sem_type>filename.read</sem_type>
+<type_list>
+<item>string</item>
+</type_list>
+</parameter>
+<parameter id="Options">
+<default_type>string</default_type>
+<default_value>[]</default_value>
+<description lang="en_US">Processing options</description>
+<multivalue>optional</multivalue>
+<sem_type>string</sem_type>
+<type_list>
+<item>string</item>
+</type_list>
+<values>
+<item>'recursive'</item>
+<item>'follow_links'</item>
+<item>'max_depth 5'</item>
+</values>
+</parameter>
+</parameters>
+</docu>
+</procedure>
+<procedure name="_FCI_DebugParameters">
+<interface>
+<io>
+<par name="Image" base_type="iconic" dimension="0"/>
+<par name="Region" base_type="iconic" dimension="0"/>
+<par name="DebugImageIn" base_type="iconic" dimension="0"/>
+<par name="DebugRegionIn" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="DebugImageOut" base_type="iconic" dimension="0"/>
+<par name="DebugRegionOut" base_type="iconic" dimension="0"/>
+</oo>
+<ic>
+<par name="Message" base_type="ctrl" dimension="0"/>
+<par name="DebugMessageIn" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="DebugMessageOut" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<c></c>
+<l>count_obj(DebugImageIn, DebugImageCount)</l>
+<l>count_obj(DebugRegionIn, DebugRegCount)</l>
+<l>tuple_length(DebugMessageIn,DebugMsgCount)</l>
+<c></c>
+<l>if(DebugImageCount = DebugRegCount and DebugMsgCount = DebugRegCount)   </l>
+<c>    </c>
+<l>    union1 (Region, RegionUnion)</l>
+<l>    area_center (RegionUnion, Area, Row, Column)</l>
+<l>    if (|Area| &gt; 0 and Area &gt;= 0)</l>
+<c>        </c>
+<l>        gen_image_proto (Image, ImageCleared, 0)</l>
+<l>        add_image (Image, ImageCleared, ImageResult, 1, 0)</l>
+<c>        </c>
+<l>        concat_obj (DebugImageIn, ImageResult, DebugImageOut)</l>
+<l>        concat_obj (DebugRegionIn, RegionUnion, DebugRegionOut)           </l>
+<l>        tuple_concat (DebugMessageIn, Message, DebugMessageOut)  </l>
+<l>    endif   </l>
+<l>endif</l>
+<c></c>
+<c></c>
+<l>return ()</l>
+<c></c>
+<c></c>
+</body>
+<docu id="_FCI_DebugParameters">
+<parameters>
+<parameter id="DebugImageIn"/>
+<parameter id="DebugImageOut"/>
+<parameter id="DebugMessageIn"/>
+<parameter id="DebugMessageOut"/>
+<parameter id="DebugRegionIn"/>
+<parameter id="DebugRegionOut"/>
+<parameter id="Image"/>
+<parameter id="Message"/>
+<parameter id="Region"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="set_display_font">
+<interface>
+<ic>
+<par name="WindowHandle" base_type="ctrl" dimension="0"/>
+<par name="Size" base_type="ctrl" dimension="0"/>
+<par name="Font" base_type="ctrl" dimension="0"/>
+<par name="Bold" base_type="ctrl" dimension="0"/>
+<par name="Slant" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure sets the text font of the current window with</c>
+<c>* the specified attributes.</c>
+<c>* </c>
+<c>* Input parameters:</c>
+<c>* WindowHandle: The graphics window for which the font will be set</c>
+<c>* Size: The font size. If Size=-1, the default of 16 is used.</c>
+<c>* Bold: If set to 'true', a bold font is used</c>
+<c>* Slant: If set to 'true', a slanted font is used</c>
+<c>* </c>
+<l>get_system ('operating_system', OS)</l>
+<l>if (Size == [] or Size == -1)</l>
+<l>    Size := 16</l>
+<l>endif</l>
+<l>if (OS{0:2} == 'Win')</l>
+<c>    * Restore previous behaviour</c>
+<l>    Size := int(1.13677 * Size)</l>
+<l>else</l>
+<l>    Size := int(Size)</l>
+<l>endif</l>
+<l>if (Font == 'Courier')</l>
+<l>    Fonts := ['Courier','Courier 10 Pitch','Courier New','CourierNew',\
+              'Liberation Mono']</l>
+<l>elseif (Font == 'mono')</l>
+<l>    Fonts := ['Consolas','Menlo','Courier','Courier 10 Pitch','FreeMono',\
+              'Liberation Mono']</l>
+<l>elseif (Font == 'sans')</l>
+<l>    Fonts := ['Luxi Sans','DejaVu Sans','FreeSans','Arial', 'Liberation Sans']</l>
+<l>elseif (Font == 'serif')</l>
+<l>    Fonts := ['Times New Roman','Luxi Serif','DejaVu Serif','FreeSerif',\
+              'Utopia','Liberation Serif']</l>
+<l>else</l>
+<l>    Fonts := Font</l>
+<l>endif</l>
+<l>Style := ''</l>
+<l>if (Bold == 'true')</l>
+<l>    Style := Style + 'Bold'</l>
+<l>elseif (Bold != 'false')</l>
+<l>    Exception := 'Wrong value of control parameter Bold'</l>
+<l>    throw (Exception)</l>
+<l>endif</l>
+<l>if (Slant == 'true')</l>
+<l>    Style := Style + 'Italic'</l>
+<l>elseif (Slant != 'false')</l>
+<l>    Exception := 'Wrong value of control parameter Slant'</l>
+<l>    throw (Exception)</l>
+<l>endif</l>
+<l>if (Style == '')</l>
+<l>    Style := 'Normal'</l>
+<l>endif</l>
+<l>query_font (WindowHandle, AvailableFonts)</l>
+<l>Font := ''</l>
+<l>for Fdx := 0 to |Fonts| - 1 by 1</l>
+<l>    Indices := find(AvailableFonts,Fonts[Fdx])</l>
+<l>    if (|Indices| &gt; 0)</l>
+<l>        if (Indices[0] &gt;= 0)</l>
+<l>            Font := Fonts[Fdx]</l>
+<l>            break</l>
+<l>        endif</l>
+<l>    endif</l>
+<l>endfor</l>
+<l>if (Font == '')</l>
+<l>    throw ('Wrong value of control parameter Font')</l>
+<l>endif</l>
+<l>Font := Font + '-' + Style + '-' + Size</l>
+<l>set_font (WindowHandle, Font)</l>
+<l>return ()</l>
+</body>
+<docu id="set_display_font">
+<abstract lang="en_US">This procedure sets the text font of the current window with the specified attributes Size, Bold and Slant. 
+As font, the font name or one of the strings 'mono', 'sans', 'serif' can be used.</abstract>
+<alternatives>
+<item>set_font</item>
+</alternatives>
+<attention lang="en_US">For 'mono', 'sans', and 'serif', it is assumed that at least one of the following fonts is installed on the system:
+'mono': 'Consolas', 'Menlo', 'Courier', 'Courier 10 Pitch', 'FreeMono'
+'sans': 'Luxi Sans', 'DejaVu Sans', 'FreeSans', 'Arial'
+'serif': 'Times New Roman', 'Luxi Serif', 'DejaVu Serif', 'FreeSerif', 'Utopia'</attention>
+<chapters>
+<item>Graphics</item>
+<item>Text</item>
+</chapters>
+<chapters lang="de_DE">
+<item>Graphik</item>
+<item>Text</item>
+</chapters>
+<chapters lang="en_US">
+<item>Graphics</item>
+<item>Text</item>
+</chapters>
+<example lang="en_US">dev_open_window_fit_image(Image,0 , 0, 400, 400, WindowHandle)
+set_display_font(WindowHandle, 16, 'mono', 'true', 'false')
+disp_text (WindowHandle,'Hello World!', 'window', 10, 10, 'black', [], [])
+</example>
+<keywords lang="de_DE">
+<item>Schriftart (Font) setzen</item>
+</keywords>
+<keywords lang="en_US">
+<item>set font</item>
+</keywords>
+<library lang="de_DE">MVTec Standard Procedures</library>
+<library lang="en_US">MVTec Standard Procedures</library>
+<predecessor>
+<item>dev_open_window</item>
+<item>open_window</item>
+<item>dev_open_window_fit_image</item>
+<item>dev_open_window_fit_size</item>
+</predecessor>
+<see_also>
+<item>set_font</item>
+</see_also>
+<short>Set font independent of OS</short>
+<short lang="de_DE">Set font independent of OS</short>
+<short lang="en_US">Set font independent of OS</short>
+<successor>
+<item>disp_text</item>
+<item>disp_continue_message</item>
+<item>set_tposition</item>
+<item>write_string</item>
+</successor>
+<parameters>
+<parameter id="Bold">
+<default_type>string</default_type>
+<default_value>'true'</default_value>
+<description lang="en_US">If set to 'true', a bold font is used</description>
+<multivalue>false</multivalue>
+<sem_type>attribute.value</sem_type>
+<type_list>
+<item>string</item>
+</type_list>
+<value_list>
+<item>'true'</item>
+<item>'false'</item>
+</value_list>
+</parameter>
+<parameter id="Font">
+<default_type>string</default_type>
+<default_value>'mono'</default_value>
+<description lang="en_US">The font name. Either 'mono', 'sans',  'serif' or a specific font name can be used. 'mono' will be mapped to 'Courier New' on Windows, to 'courier' on Linux, and to 'Menlo' on OS X. 'sans' will be mapped to 'Arial' on Windows and OS X, and to 'helvetica' on Linux. 'serif' will be mapped to 'Times New Roman' on Windows and OS X, and to 'times' on Linux.
+</description>
+<multivalue>false</multivalue>
+<sem_type>attribute.value</sem_type>
+<type_list>
+<item>string</item>
+</type_list>
+<values>
+<item>'mono'</item>
+<item>'sans'</item>
+<item>'serif'</item>
+</values>
+</parameter>
+<parameter id="Size">
+<default_type>integer</default_type>
+<default_value>16</default_value>
+<description lang="en_US">The font size on Windows systems. If Size=-1, the default of 16 is used.
+On Linux systems, ALL values are multiplied with 1.25 and then mapped to [11, 14, 17, 20, 25, 34].</description>
+<multivalue>false</multivalue>
+<sem_type>integer</sem_type>
+<type_list>
+<item>integer</item>
+</type_list>
+<values>
+<item>[9, 11, 14, 16, 20, 27]</item>
+</values>
+</parameter>
+<parameter id="Slant">
+<default_type>string</default_type>
+<default_value>'false'</default_value>
+<description lang="en_US">If set to 'true', a slanted font is used</description>
+<sem_type>attribute.value</sem_type>
+<type_list>
+<item>string</item>
+</type_list>
+<value_list>
+<item>'true'</item>
+<item>'false'</item>
+</value_list>
+</parameter>
+<parameter id="WindowHandle">
+<default_type>integer</default_type>
+<description lang="en_US">The window handle of the window, where the font will be set</description>
+<mixed_type>false</mixed_type>
+<sem_type>window</sem_type>
+<type_list>
+<item>integer</item>
+</type_list>
+</parameter>
+</parameters>
+</docu>
+</procedure>
+<procedure name="GetlineComment">
+<interface>
+<io>
+<par name="hROIInspectSliver" base_type="iconic" dimension="0"/>
+<par name="RegionDieBottomDilation" base_type="iconic" dimension="0"/>
+<par name="hROIInspectBoundarySliver" base_type="iconic" dimension="0"/>
+<par name="InspectImage" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="RegionMidDie" base_type="iconic" dimension="0"/>
+<par name="Region" base_type="iconic" dimension="0"/>
+</oo>
+<ic>
+<par name="NumberDieBottom" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="DieWidth" base_type="ctrl" dimension="0"/>
+<par name="Value" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<l>*  stop()</l>
+<l>* RegionMidDie := hROIInspectSliver</l>
+<l>* if ( NumberDieBottom &gt;0)</l>
+<l>*     DieWidth := 48</l>
+<l>*     intersection (RegionDieBottomDilation, hROIInspectBoundarySliver, RegionIntersection5)</l>
+<l>*     shape_trans (RegionIntersection5, RegionTrans, 'rectangle2')</l>
+<l>*     region_features (RegionTrans, 'phi', Phii)</l>
+<l>*     area_center (RegionTrans, Area1, Row, Column)</l>
+<l>*     ColumnLeftBorder := Column - DieWidth/2</l>
+<l>*     ColumnRightBorder := Column + DieWidth/2</l>
+<l>*     ColTopLeft :=ColumnLeftBorder - ColumnLeftBorder*tan ( rad(90)+Phii)</l>
+<l>*     ColTopRight :=ColumnRightBorder -  ColumnRightBorder*tan (rad(90)+Phii)</l>
+<l>*     ColBotLeft :=ColumnLeftBorder  +ColumnLeftBorder*tan ( rad(90)+ Phii)</l>
+<l>*     ColBotRight :=ColumnRightBorder + ColumnRightBorder*tan (rad(90)+Phii)</l>
+<l>*     gen_rectangle1 (ROI_0, Row-100, Column, Row + 400, Column+DieWidth/1.5)</l>
+<l>*     mean_image (InspectImage, ImageMean, 1, 30)</l>
+<l>*     emphasize (ImageMean, ImageEmphasize1, 10, 100,5)</l>
+<l>*     reduce_domain (ImageEmphasize1, ROI_0, ImageReduced1)</l>
+<l>*     GetEdgeLine (ImageEmphasize1, ROI_0, 0, 30,0.5, edgeLinePoints, isPass)</l>
+<l>*     if ( isPass &gt;0)</l>
+<l>*         gen_region_line (RegionLines1,edgeLinePoints[0],edgeLinePoints[1],edgeLinePoints[2], edgeLinePoints[3])</l>
+<l>*         if (edgeLinePoints[1] &gt; Column)</l>
+<l>*             Ofsset := DieWidth</l>
+<l>*         else </l>
+<l>*             Ofsset := -DieWidth</l>
+<l>*         endif</l>
+<l>*         intersection_lines (edgeLinePoints[0],edgeLinePoints[1],edgeLinePoints[2], edgeLinePoints[3],  0, 0,0, 2048, RowTopRight, ColTopRight, IsOverlapping)</l>
+<l>*         intersection_lines (edgeLinePoints[0],edgeLinePoints[1]-Ofsset,edgeLinePoints[2], edgeLinePoints[3]-Ofsset,  0, 0,0, 2048, RowTopLeft, ColTopLeft, IsOverlapping)</l>
+<l>*         intersection_lines (edgeLinePoints[0],edgeLinePoints[1],edgeLinePoints[2], edgeLinePoints[3], 2048, 0,2048, 2048, RowBotRight, ColBotRight, IsOverlapping)</l>
+<l>*         intersection_lines (edgeLinePoints[0],edgeLinePoints[1]-Ofsset,edgeLinePoints[2], edgeLinePoints[3]-Ofsset,  2048, 0,2048, 2048, RowBotLeft, ColBotLeft, IsOverlapping)</l>
+<l>*     endif</l>
+<l>*     RowsDie := [0 , 0, 2048 ,2048, 0]</l>
+<l>*     ColsDie := [ColTopLeft , ColTopRight, ColBotRight ,ColBotLeft, ColTopLeft]</l>
+<l>*     dev_display (InspectImage)</l>
+<l>*     gen_region_polygon_filled (Region, RowsDie, ColsDie)</l>
+<l>*     region_features (Region, 'phi', Value)</l>
+<l>*     intersection (Region, hROIInspectSliver, RegionMidDie)</l>
+<l>*     dev_display (Region)</l>
+<l>*     dev_display (RegionTrans)</l>
+<l>*     dev_disp_text (Value- Phii +'  isPass '+ isPass, 'window', 400, 400, 'black', [], [])</l>
+<l>* endif</l>
+<l>return ()</l>
+</body>
+<docu id="GetlineComment">
+<parameters>
+<parameter id="DieWidth"/>
+<parameter id="InspectImage"/>
+<parameter id="NumberDieBottom"/>
+<parameter id="Region"/>
+<parameter id="RegionDieBottomDilation"/>
+<parameter id="RegionMidDie"/>
+<parameter id="Value"/>
+<parameter id="hROIInspectBoundarySliver"/>
+<parameter id="hROIInspectSliver"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="_HP_DarkEncap_Inspect_CrackDieSliver">
+<interface>
+<io>
+<par name="Image" base_type="iconic" dimension="0"/>
+<par name="hROIInspectBoundarySliverIn" base_type="iconic" dimension="0"/>
+<par name="hROIInspectSliverIn" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="hROIInspectSliverOut" base_type="iconic" dimension="0"/>
+<par name="hRegionDieBottom" base_type="iconic" dimension="0"/>
+<par name="RegionWhite" base_type="iconic" dimension="0"/>
+<par name="DebugImageOut" base_type="iconic" dimension="0"/>
+<par name="DebugRegionOut" base_type="iconic" dimension="0"/>
+</oo>
+<ic>
+<par name="hGrayThresholdSliver" base_type="ctrl" dimension="0"/>
+<par name="IsStepMode" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="hIsDieCrack" base_type="ctrl" dimension="0"/>
+<par name="DebugMessageOut" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<l>hROIInspectSliverOut := hROIInspectSliverIn</l>
+<l>gen_empty_obj (hRegionDieBottom)</l>
+<l>gen_empty_obj (DebugImageOut)</l>
+<l>gen_empty_obj (DebugRegionOut)</l>
+<l>gen_empty_obj (RegionWhite)</l>
+<l>DebugMessageOut := []</l>
+<l>hIsDieCrack := false</l>
+<c></c>
+<c>*Get left right encap border </c>
+<l>reduce_domain (Image, hROIInspectBoundarySliverIn, ImageReducedFullDie)</l>
+<c>* Threshold Find high White region</c>
+<l>emphasize (ImageReducedFullDie, ImageEmphasize, 20, 20, 1)</l>
+<l>gauss_filter (ImageEmphasize, ImageGauss,3)</l>
+<l>threshold (ImageGauss, RegionWhite, hGrayThresholdSliver, 255)</l>
+<l>if (IsStepMode)</l>
+<l>     Message:=['All White region [Encap Sliver]']</l>
+<l>    _FCI_DebugParameters (Image, RegionWhite, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<l>difference (RegionWhite, hROIInspectSliverIn, RegionWhiteBottom)</l>
+<l>closing_rectangle1 (RegionWhiteBottom, RegionClosing, 1, 10)</l>
+<l>connection (RegionClosing, ConnectedRegions2)</l>
+<l>select_shape (ConnectedRegions2, hRegionDieBottomTemp, 'height', 'and',400, 99999)</l>
+<l>count_obj (hRegionDieBottomTemp, NumberDieBottom)</l>
+<l>if (NumberDieBottom = 0)</l>
+<l>    hIsDieCrack := true</l>
+<l>    return()</l>
+<l>endif</l>
+<l>if (IsStepMode)</l>
+<l>     Message:=['Die region after being filled with height value [Encap Sliver]']</l>
+<l>    _FCI_DebugParameters (Image, hRegionDieBottomTemp, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c>* Add linesgauss for remove bottom Die</c>
+<l>calculate_lines_gauss_parameters (10, [30, 15], SigmaAll, LowAll, HighAll)</l>
+<l>lines_gauss (ImageReducedFullDie, LinesAll,SigmaAll, LowAll, HighAll, 'light', 'true', 'parabolic', 'true')</l>
+<l>segment_contours_xld (LinesAll, ContoursSplit1, 'lines_circles', 1, 1,2)</l>
+<l>gen_region_contour_xld (ContoursSplit1, Region1, 'filled')</l>
+<l>union1 (Region1, RegionUnion3)</l>
+<l>connection (RegionUnion3, ConnectedRegions4)</l>
+<l>dilation_rectangle1 (ConnectedRegions4, RegionDilation,1,10)</l>
+<l>select_shape_proto (RegionDilation, hRegionDieBottomTemp, SelectedRegions9,'overlaps_abs', 1, 99999)</l>
+<l>union2 (SelectedRegions9, hRegionDieBottomTemp, RegionUnion1)</l>
+<l>union1 (RegionUnion1, RegionUnion2)</l>
+<l>dilation_rectangle1 (RegionUnion2, hRegionDieBottom, 10, 20)</l>
+<l>if (IsStepMode)</l>
+<l>     Message:=['Full Die region [Encap Sliver]']</l>
+<l>    _FCI_DebugParameters (Image, hRegionDieBottom, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c>* Get region for Inspect sliver</c>
+<l>smallest_rectangle1 (hROIInspectSliverIn, Row1Sliver, Column1Sliver, Row2Sliver, Column2Sliver)                </l>
+<l>region_features (RegionUnion1, 'width', Value)</l>
+<l>if (Value &gt; 85 and Value &lt; 115)</l>
+<l>    opening_rectangle1 (hRegionDieBottom, RegionOpening, 1, 50)</l>
+<l>    smallest_rectangle1 (RegionOpening, Row1Die, Column1Die, Row2Die, Column2Die)</l>
+<l>    gen_rectangle1 (hROIInspectSliverOut, Row1Sliver, Column1Die, Row2Sliver, Column2Die)</l>
+<l>    if (IsStepMode)</l>
+<l>         Message:=['Sliver region for inspection [Encap Sliver]']</l>
+<l>        _FCI_DebugParameters (Image, hROIInspectSliverOut, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>    endif</l>
+<l>endif</l>
+<l>return ()</l>
+</body>
+<docu id="_HP_DarkEncap_Inspect_CrackDieSliver">
+<parameters>
+<parameter id="DebugImageOut"/>
+<parameter id="DebugMessageOut"/>
+<parameter id="DebugRegionOut"/>
+<parameter id="Image"/>
+<parameter id="IsStepMode"/>
+<parameter id="RegionWhite"/>
+<parameter id="hGrayThresholdSliver"/>
+<parameter id="hIsDieCrack"/>
+<parameter id="hROIInspectBoundarySliverIn"/>
+<parameter id="hROIInspectSliverIn"/>
+<parameter id="hROIInspectSliverOut"/>
+<parameter id="hRegionDieBottom"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="_HP_DarkEncap_Inspect_QuadrantSliver">
+<interface>
+<io>
+<par name="InspectImage" base_type="iconic" dimension="0"/>
+<par name="hROIInspectSliver" base_type="iconic" dimension="0"/>
+<par name="hROIInspectQuadrantSliver" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="hRegionDefectQuadrantSliver" base_type="iconic" dimension="0"/>
+<par name="DebugImageOut" base_type="iconic" dimension="0"/>
+<par name="DebugRegionOut" base_type="iconic" dimension="0"/>
+<par name="RegionMidDie" base_type="iconic" dimension="0"/>
+<par name="RegionVarAllSliver" base_type="iconic" dimension="0"/>
+<par name="RegionVarMidSliver" base_type="iconic" dimension="0"/>
+<par name="Lines" base_type="iconic" dimension="0"/>
+<par name="RegionAllWhite" base_type="iconic" dimension="0"/>
+</oo>
+<ic>
+<par name="hOffsetSliver" base_type="ctrl" dimension="0"/>
+<par name="hGrayAllWhiteSliver" base_type="ctrl" dimension="0"/>
+<par name="hContrastGaussThresholdSliver" base_type="ctrl" dimension="0"/>
+<par name="hLineWidthThresholdSliver" base_type="ctrl" dimension="0"/>
+<par name="hWidthVarThresholdSliver" base_type="ctrl" dimension="0"/>
+<par name="hHeightVarThresholdSliver" base_type="ctrl" dimension="0"/>
+<par name="hContrastVarThresholdSliver" base_type="ctrl" dimension="0"/>
+<par name="hScaleVarThresholdSliver" base_type="ctrl" dimension="0"/>
+<par name="hMinAreaDefectQuaDrantSliver" base_type="ctrl" dimension="0"/>
+<par name="hMinGrayDefectQuaDrantSliver" base_type="ctrl" dimension="0"/>
+<par name="hMaxGrayDefectQuaDrantSliver" base_type="ctrl" dimension="0"/>
+<par name="hMinDiffGrayQuadrantSliver" base_type="ctrl" dimension="0"/>
+<par name="hIsStepMode" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="hIsQuadrantSliver" base_type="ctrl" dimension="0"/>
+<par name="DebugMessageOut" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<l>gen_empty_obj (hRegionDefectQuadrantSliver)</l>
+<l>gen_empty_obj (DebugImageOut)</l>
+<l>gen_empty_obj (DebugRegionOut)</l>
+<l>gen_empty_obj (RegionVarAllSliver)</l>
+<l>gen_empty_obj (RegionVarMidSliver)</l>
+<l>gen_empty_obj (RegionWhite)</l>
+<l>gen_empty_obj (RegionMidDie)</l>
+<l>gen_empty_obj (RegionWhite)</l>
+<l>gen_empty_obj (RegionAllWhite)</l>
+<l>DebugMessageOut := []</l>
+<l>hIsQuadrantSliver := false</l>
+<c></c>
+<l>smallest_rectangle1 (hROIInspectSliver, Row1Sliver, Column1Sliver, Row2Sliver, Column2Sliver)</l>
+<l>erosion_rectangle1 (hROIInspectSliver, RegionMidDie, hOffsetSliver, 1)</l>
+<l>reduce_domain (InspectImage, hROIInspectSliver, ImageReducedSliver)</l>
+<l>if (hIsStepMode)</l>
+<l>    Message:=['Sliver in Quadrant ROI for inspection [Encap Sliver Inspection]']</l>
+<l>    _FCI_DebugParameters (InspectImage, hROIInspectQuadrantSliver, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c>* Line gauss</c>
+<l>calculate_lines_gauss_parameters (hLineWidthThresholdSliver, hContrastGaussThresholdSliver, Sigma, Low, High)</l>
+<l>lines_gauss (ImageReducedSliver, Lines, Sigma, Low, High, 'light', 'true', 'parabolic', 'true')</l>
+<l>lines_gauss (ImageReducedSliver, LinesDark, Sigma, 0.5*Low, 0.55*High, 'dark', 'true', 'parabolic', 'true')</l>
+<c>* Remove dark region</c>
+<l>reduce_domain (ImageReducedSliver, RegionMidDie, ImageReduced1)</l>
+<l>threshold (ImageReduced1, Region2, 0, 120)</l>
+<l>closing_circle (Region2, RegionClosing4, 3.5)</l>
+<l>connection (RegionClosing4, ConnectedRegions)</l>
+<l>select_shape (ConnectedRegions, SelectedRegions2, 'area', 'and', 1500, 99999)</l>
+<l>union1 (SelectedRegions2, RegionUnion6)</l>
+<l>count_obj (RegionUnion6, Number1)</l>
+<l>RegionSliverNodark := hROIInspectSliver</l>
+<l>hRegionQuadrantSliverNodark := hROIInspectQuadrantSliver</l>
+<l>gen_empty_region (RegionSliverNodark)</l>
+<l>if ( Number1 &gt; 0 )</l>
+<l>    if (hIsStepMode)</l>
+<l>        Message:=['Dark region [Encap Sliver Inspection]']</l>
+<l>        _FCI_DebugParameters (InspectImage, RegionUnion6, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>    endif</l>
+<l>*     smallest_rectangle1 (RegionUnion6, Row13, Column15, Row23, Column25)</l>
+<l>*     gen_rectangle1 (Rectangle1, Row13, Column1Sliver, Row23, Column2Sliver)</l>
+<l>*     dilation_rectangle1 (RegionUnion6, RegionDilation3, 1, 3)</l>
+<l>*     difference (Rectangle1, RegionDilation3, RegionDifference3)</l>
+<l>*     connection (RegionDifference3, ConnectedRegions8)</l>
+<l>*     area_center (Rectangle1, Area1, Row, Column)</l>
+<l>*     select_shape (ConnectedRegions8, SelectedRegions5, 'column', 'and', Column, 99999)</l>
+<l>*     select_shape (SelectedRegions5, SelectedRegions13, 'height', 'and', 200, 99999)</l>
+<l>*     concat_obj (RegionDilation3, SelectedRegions13, ObjectsConcat)</l>
+<l>*     union1 (ObjectsConcat, RegionUnion12)</l>
+<l>    difference (hROIInspectQuadrantSliver, RegionUnion6, hRegionQuadrantSliverNodark)</l>
+<l>    difference (ImageReducedSliver, RegionUnion6, RegionSliverNodark)</l>
+<l>    reduce_domain (ImageReducedSliver, RegionSliverNodark, ImageReduced4)</l>
+<l>else </l>
+<l>    ImageReduced4 := ImageReducedSliver</l>
+<l>endif</l>
+<l>if (hIsStepMode)</l>
+<l>    Message:=['Quadrant Sliver region after remove dark region [Encap Sliver Inspection]']</l>
+<l>    _FCI_DebugParameters (InspectImage, hRegionQuadrantSliverNodark, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c>* Threshold find all white region with var threshold</c>
+<l>threshold (ImageReducedSliver, RegionAllWhite, hGrayAllWhiteSliver, 255)</l>
+<l>if (hIsStepMode)</l>
+<l>    Message:=['All White region [Encap Sliver Inspection]']</l>
+<l>    _FCI_DebugParameters (InspectImage, RegionAllWhite, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<l>opening_circle (RegionAllWhite, RegionOpeningAllWhite, 2)</l>
+<l>var_threshold (ImageReduced4, RegionVarAllSliver, hWidthVarThresholdSliver, hHeightVarThresholdSliver, hScaleVarThresholdSliver, hContrastVarThresholdSliver, 'light')</l>
+<l>closing_circle (RegionVarAllSliver, RegionDilation4, 3.5)</l>
+<l>intersection (RegionDilation4, RegionOpeningAllWhite, RegionVarAllSliver)</l>
+<l>intersection (RegionVarAllSliver, RegionMidDie, RegionVarMidSliver)</l>
+<l>if (hIsStepMode)</l>
+<l>    Message:=['All White region outside Die [Encap Sliver Inspection]']</l>
+<l>    _FCI_DebugParameters (InspectImage, RegionVarAllSliver, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<l>if (hIsStepMode)</l>
+<l>    Message:=['All White region inside Die [Encap Sliver Inspection]']</l>
+<l>    _FCI_DebugParameters (InspectImage, RegionVarMidSliver, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c>*Get result from line gauss</c>
+<c>* get long lines</c>
+<l>segment_contours_xld (Lines, ContoursSplit, 'lines', 1, 1, 2)</l>
+<l>hMinLenghtDefectQuaDrantSliver :=  hMinAreaDefectQuaDrantSliver</l>
+<l>select_shape_xld (Lines, SelectedXLD, 'contlength', 'and', hMinLenghtDefectQuaDrantSliver, 99999)</l>
+<l>segment_contours_xld (SelectedXLD, ContoursSplit2, 'lines', 1, 1, 2)</l>
+<l>gen_region_contour_xld (ContoursSplit2, Region, 'filled')</l>
+<l>dilation_circle (Region, RegionDilation1, 1.5)</l>
+<l>union1 (RegionDilation1, RegionUnion5)</l>
+<l>gen_region_contour_xld (ContoursSplit, RegionLines, 'filled')</l>
+<l>connection (RegionLines, ConnectedRegions6)</l>
+<l>count_obj (ConnectedRegions6, Number)</l>
+<l>if (Number &gt; 0)</l>
+<l>    if (hIsStepMode)</l>
+<l>        Message:=['Long Lines region [Encap Sliver Inspection]']</l>
+<l>        _FCI_DebugParameters (InspectImage, ConnectedRegions6, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>    endif</l>
+<l>endif</l>
+<c>* Select region near long lines</c>
+<l>select_shape_proto (ConnectedRegions6, RegionUnion5, SelectedRegions1, 'overlaps_abs', 1, 99999)</l>
+<l>union1 (SelectedRegions1, RegionUnion4)</l>
+<l>intersection (RegionUnion4, hRegionQuadrantSliverNodark, RegionIntersection3)</l>
+<l>intersection (RegionIntersection3, ImageReduced4, RegionIntersection1)</l>
+<l>intersection (RegionIntersection1, RegionAllWhite, RegionIntersectionLinesNoDark)</l>
+<l>closing_circle (RegionIntersectionLinesNoDark, RegionIntersectionLinesNoDark, 3.5)</l>
+<c>* get var threshold near lines region</c>
+<l>connection (RegionVarMidSliver, ConnectedRegions10)</l>
+<l>select_shape_proto (ConnectedRegions10, RegionIntersection3, SelectedRegions3, 'overlaps_abs', 1, 99999)</l>
+<c>* union long lines and short lines</c>
+<l>union2 (SelectedRegions3, RegionIntersectionLinesNoDark, RegionUnion10)</l>
+<l>count_obj (RegionUnion10, Number2)</l>
+<l>if (Number2 &gt; 0)</l>
+<l>    if (hIsStepMode)</l>
+<l>        Message:=['All possible Defect region [Encap Sliver Inspection]']</l>
+<l>        _FCI_DebugParameters (InspectImage, RegionUnion10, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>    endif</l>
+<l>endif</l>
+<c>* Get bright linesgauss region</c>
+<l>union1 (RegionUnion10, RegionUnion11)</l>
+<l>connection (RegionUnion11, ConnectedRegions5)</l>
+<c>* select area and gray</c>
+<l>select_shape (ConnectedRegions5, SelectedRegions7, 'area', 'and', hMinAreaDefectQuaDrantSliver, 99999)</l>
+<l>select_gray (SelectedRegions7, InspectImage, SquadrantRegion, 'mean', 'and', hMinGrayDefectQuaDrantSliver, 255)</l>
+<l>count_obj (SquadrantRegion, NumberQuadVarDefect)</l>
+<l>if ( NumberQuadVarDefect = 0)</l>
+<l>    hIsQuadrantSliver := false</l>
+<l>    return ()</l>
+<l>endif</l>
+<l>if (hIsStepMode)</l>
+<l>    Message:=['All possible Defect region [Encap Sliver Inspection]']</l>
+<l>    _FCI_DebugParameters (InspectImage, SquadrantRegion, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<l>gen_empty_obj (QuadrantRejectRegion)</l>
+<l>for index := 1 to NumberQuadVarDefect by 1</l>
+<l>    select_obj (SquadrantRegion, ObjectSelected, index)</l>
+<l>    closing_rectangle1 (ObjectSelected, RegionClosing1, 2, 2)</l>
+<l>    region_features (RegionClosing1, 'width', ValueWidth)</l>
+<l>    region_features (RegionClosing1, 'height', ValueHeight)</l>
+<l>    if (ValueWidth &gt; 3 * ValueHeight)</l>
+<l>        ValueHeight := 2 * ValueHeight</l>
+<l>    elseif (ValueHeight &gt; 3 * ValueWidth)</l>
+<l>        ValueWidth := 2 * ValueWidth</l>
+<l>    endif</l>
+<l>    smallest_rectangle1 (RegionClosing1, Row12, Column12, Row22, Column22)</l>
+<l>    gen_rectangle1 (Rectangle, Row12, Column12, Row12 + round(ValueHeight/3) + 1, Column12 + round(ValueWidth/3)+1)</l>
+<l>    intersection (ObjectSelected, Rectangle, RegionIntersection2)</l>
+<l>    gray_features (RegionIntersection2, InspectImage, 'mean', hGrayCornerDefect)</l>
+<l>    difference (ObjectSelected, RegionIntersection2, RegionDifference1)</l>
+<l>    gray_features (RegionDifference1, InspectImage, 'mean', hGrayDefect)</l>
+<l>    hdiff := hGrayCornerDefect - hGrayDefect</l>
+<l>    if (hdiff &gt; hMinDiffGrayQuadrantSliver and hGrayCornerDefect &gt; 1.05 * hMinGrayDefectQuaDrantSliver)</l>
+<l>        concat_obj (hRegionDefectQuadrantSliver, ObjectSelected, hRegionDefectQuadrantSliver)</l>
+<l>        hIsQuadrantSliver := true</l>
+<l>        continue</l>
+<l>    endif</l>
+<l>endfor</l>
+<l>if (hIsQuadrantSliver = true)</l>
+<l>    if (hIsStepMode)</l>
+<l>        Message:=['Sliver in Quadrant region [Encap Sliver Inspection]']</l>
+<l>        _FCI_DebugParameters (InspectImage, hRegionDefectQuadrantSliver, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>    endif</l>
+<l>endif</l>
+<l>return ()</l>
+</body>
+<docu id="_HP_DarkEncap_Inspect_QuadrantSliver">
+<parameters>
+<parameter id="DebugImageOut"/>
+<parameter id="DebugMessageOut"/>
+<parameter id="DebugRegionOut"/>
+<parameter id="InspectImage"/>
+<parameter id="Lines"/>
+<parameter id="RegionAllWhite"/>
+<parameter id="RegionMidDie"/>
+<parameter id="RegionVarAllSliver"/>
+<parameter id="RegionVarMidSliver"/>
+<parameter id="hContrastGaussThresholdSliver"/>
+<parameter id="hContrastVarThresholdSliver"/>
+<parameter id="hGrayAllWhiteSliver"/>
+<parameter id="hHeightVarThresholdSliver"/>
+<parameter id="hIsQuadrantSliver"/>
+<parameter id="hIsStepMode"/>
+<parameter id="hLineWidthThresholdSliver"/>
+<parameter id="hMaxGrayDefectQuaDrantSliver"/>
+<parameter id="hMinAreaDefectQuaDrantSliver"/>
+<parameter id="hMinDiffGrayQuadrantSliver"/>
+<parameter id="hMinGrayDefectQuaDrantSliver"/>
+<parameter id="hOffsetSliver"/>
+<parameter id="hROIInspectQuadrantSliver"/>
+<parameter id="hROIInspectSliver"/>
+<parameter id="hRegionDefectQuadrantSliver"/>
+<parameter id="hScaleVarThresholdSliver"/>
+<parameter id="hWidthVarThresholdSliver"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="_HP_DarkEncap_Inspect_Sliver">
+<interface>
+<io>
+<par name="InspectImage" base_type="iconic" dimension="0"/>
+<par name="hROIInspectSliver" base_type="iconic" dimension="0"/>
+<par name="hRegionDefectQuadrantSliver" base_type="iconic" dimension="0"/>
+<par name="RegionVarAllSliver" base_type="iconic" dimension="0"/>
+<par name="RegionVarMidSliver" base_type="iconic" dimension="0"/>
+<par name="RegionWhite" base_type="iconic" dimension="0"/>
+<par name="RegionMidDie" base_type="iconic" dimension="0"/>
+<par name="Lines" base_type="iconic" dimension="0"/>
+<par name="RegionAllWhite" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="hRegionDefectSliver" base_type="iconic" dimension="0"/>
+<par name="DebugImageOut" base_type="iconic" dimension="0"/>
+<par name="DebugRegionOut" base_type="iconic" dimension="0"/>
+</oo>
+<ic>
+<par name="hMinAreaDefectSliver" base_type="ctrl" dimension="0"/>
+<par name="hMinGrayDefectSliver" base_type="ctrl" dimension="0"/>
+<par name="hMaxGrayDefectSliver" base_type="ctrl" dimension="0"/>
+<par name="hSmallLengthDefectSliver" base_type="ctrl" dimension="0"/>
+<par name="hIsStepMode" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="hIsSliver" base_type="ctrl" dimension="0"/>
+<par name="DebugMessageOut" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<l>gen_empty_obj (hRegionDefectSliver)</l>
+<l>gen_empty_obj (DebugImageOut)</l>
+<l>gen_empty_obj (DebugRegionOut)</l>
+<c></c>
+<l>DebugMessageOut := []</l>
+<l>hIsSliver := false</l>
+<c>* Get Result from Threshold Method </c>
+<l>intersection (RegionWhite, hROIInspectSliver, RegionIntersection)</l>
+<l>difference (RegionIntersection, RegionMidDie, RegionDifference)</l>
+<l>connection (RegionDifference, ConnectedRegions3)</l>
+<l>select_shape (ConnectedRegions3, SelectedRegions4, 'area', 'and',3 * hMinAreaDefectSliver, 999999)</l>
+<l>count_obj (SelectedRegions4, NumberRegionSliver)</l>
+<l>if(NumberRegionSliver &gt; 0)</l>
+<l>    concat_obj (hRegionDefectSliver, SelectedRegions4, hRegionDefectSliver)</l>
+<l>    if (hIsStepMode)</l>
+<l>        Message:=['Sliver region [Encap Sliver Inspection]']</l>
+<l>        _FCI_DebugParameters (InspectImage, hRegionDefectSliver, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>    endif</l>
+<l>    hIsSliver := true</l>
+<l>    return()</l>
+<l>endif</l>
+<c>* Get Result from Var Threshold Method </c>
+<l>connection (RegionVarAllSliver, ConnectedRegions9)</l>
+<l>select_shape_proto (ConnectedRegions9, hROIInspectSliver, RegionIntersectionVar,  'overlaps_rel', 10,100)</l>
+<l>intersection (RegionVarAllSliver, RegionMidDie, RegionIntersectionVar)</l>
+<l>if (hIsStepMode)</l>
+<l>    Message:=['Sliver region with Var threshold [Encap Sliver Inspection]']</l>
+<l>    _FCI_DebugParameters (InspectImage, RegionIntersectionVar, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c>* Get Result from Lines Guass method</c>
+<l>gen_empty_obj (DefectRegionSliver)</l>
+<l>smallest_rectangle1 (RegionMidDie, Row11, Column11, Row21, Column21)</l>
+<l>crop_contours_xld (Lines, CroppedContours,  Row11, Column11, Row21, Column21,'true')</l>
+<l>select_contours_xld (CroppedContours, SelectedContours, 'contour_length', hSmallLengthDefectSliver, 20000, -0.5, 0.5)</l>
+<l>segment_contours_xld (SelectedContours, ContoursSplit, 'lines',1, 1, 2)</l>
+<l>gen_region_contour_xld (ContoursSplit, SliverLinesGaussRegion, 'filled')</l>
+<l>union1 (SliverLinesGaussRegion, RegionUnion7)</l>
+<l>opening_circle (RegionAllWhite, RegionAllWhite, 2)</l>
+<l>intersection (RegionUnion7, RegionAllWhite, RegionIntersection4)</l>
+<l>union1 (RegionIntersection4, RegionUnionLineGauss)</l>
+<l>if (hIsStepMode)</l>
+<l>    Message:=['Sliver region with Lines Gauss Threshold [Encap Sliver Inspection]']</l>
+<l>    _FCI_DebugParameters (InspectImage, RegionUnionLineGauss, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c>* Select shape</c>
+<l>connection (RegionUnionLineGauss, ConnectedRegions)</l>
+<l>connection (RegionIntersectionVar, ConnectedRegions1)</l>
+<c>*small sliver with low contrast</c>
+<l>gen_empty_obj (DefectRegionSliverSmall)</l>
+<l>select_shape (ConnectedRegions1, SelectedRegions8, 'area', 'and', hMinAreaDefectSliver, 99999)</l>
+<l>erosion_circle (SelectedRegions8, RegionErosion, 2)</l>
+<l>select_gray (RegionErosion, InspectImage, SelectedRegions10, 'median', 'and', hMinGrayDefectSliver, hMaxGrayDefectSliver)</l>
+<l>union1 (SelectedRegions10, RegionUnion9)</l>
+<l>select_shape_proto (SelectedRegions8, RegionUnion9, SelectedRegions11, 'overlaps_rel', 1,100)</l>
+<l>gen_empty_obj (DefectRegionSliverSmall)</l>
+<l>intersection (SelectedRegions11, RegionMidDie, DefectRegionSliverSmall)</l>
+<l>if (hIsStepMode)</l>
+<l>    Message:=['Small Sliver region with low contrast Threshold [Encap Sliver Inspection]']</l>
+<l>    _FCI_DebugParameters (InspectImage, DefectRegionSliverSmall, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c>* sliver with lines</c>
+<l>select_shape (ConnectedRegions1, SliverRegionSmall, 'area', 'and', 0.5* hMinAreaDefectSliver, 999999)</l>
+<l>select_gray (SliverRegionSmall, InspectImage, DefectRegionSliver2, 'mean', 'and', hMinGrayDefectSliver, 255)</l>
+<l>select_shape (DefectRegionSliver2, DefectRegionSliverLines, 'anisometry', 'and',3, 999)</l>
+<l>union1 (DefectRegionSliver2, RegionUnion13)</l>
+<l>union1 (DefectRegionSliverLines, RegionUnion14)</l>
+<l>difference (RegionUnion13, RegionUnion14, RegionDifference2)</l>
+<l>select_shape (ConnectedRegions, SelectedRegions6, 'anisometry', 'and',5, 999)</l>
+<l>select_shape (SelectedRegions6, SelectedRegions, 'area', 'and',10, 99999)</l>
+<l>select_shape_proto (SelectedRegions, RegionDifference2, SelectedRegions12, 'overlaps_rel', 0,50)</l>
+<l>dilation_circle (SelectedRegions12, SelectedRegionsLines, 1.5)</l>
+<l>gen_empty_obj (RegionUnion15)</l>
+<l>union1 (SelectedRegionsLines, RegionUnion15)</l>
+<l>if (hIsStepMode)</l>
+<l>    Message:=['Lines Shape Defect region [Encap Sliver Inspection]']</l>
+<l>    _FCI_DebugParameters (InspectImage, RegionUnion15, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<c>*Large Sliver with hight contrast</c>
+<l>gen_empty_obj (SliverRegionLarge)</l>
+<l>select_shape (ConnectedRegions1, SliverRegionLarge, 'area', 'and', 8 * hMinAreaDefectSliver, 999999)</l>
+<l>if (hIsStepMode)</l>
+<l>    Message:=['Large Defect region before recheck [Encap Sliver Inspection]']</l>
+<l>    _FCI_DebugParameters (InspectImage, SliverRegionLarge, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<l>erosion_circle (SliverRegionLarge, RegionErosion2,2)</l>
+<l>gen_empty_obj (DefectRegionSliverLarge)</l>
+<l>select_gray (RegionErosion2, InspectImage, DefectRegionSliverLarge, 'mean', 'and', hMaxGrayDefectSliver, 255)</l>
+<l>if (hIsStepMode)</l>
+<l>    Message:=['Large Defect region after recheck [Encap Sliver Inspection]']</l>
+<l>    _FCI_DebugParameters (InspectImage, DefectRegionSliverLarge, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>endif</l>
+<l>union2 (DefectRegionSliverSmall, DefectRegionSliverLines, RegionUnion8)</l>
+<l>union2 (DefectRegionSliverLarge, RegionUnion8, DefectRegionSlivertemp)</l>
+<l>union2 (DefectRegionSlivertemp, SelectedRegionsLines, DefectRegionSliver)</l>
+<l>union1 (DefectRegionSliver, DefectRegionSliver)</l>
+<l>count_obj (DefectRegionSliver, Number)</l>
+<l>Value1 := 0</l>
+<l>if ( Number &gt; 0)</l>
+<l>    union1 (DefectRegionSliver, RegionUnion)</l>
+<l>    region_features (RegionUnion, 'area', Value1)</l>
+<l>    if (hIsStepMode)</l>
+<l>        Message:=[' All Sliver defect region  + Area = '+ Value1 + '  [Encap Sliver Inspection]']</l>
+<l>        _FCI_DebugParameters (InspectImage, DefectRegionSliver, DebugImageOut, DebugRegionOut, DebugImageOut, DebugRegionOut, Message, DebugMessageOut, DebugMessageOut)</l>
+<l>    endif</l>
+<l>    if( Value1 &gt; 5 * hMinAreaDefectSliver)</l>
+<l>        hIsSliver := true</l>
+<c></c>
+<l>    endif </l>
+<l>endif</l>
+<l>return ()</l>
+</body>
+<docu id="_HP_DarkEncap_Inspect_Sliver">
+<parameters>
+<parameter id="DebugImageOut"/>
+<parameter id="DebugMessageOut"/>
+<parameter id="DebugRegionOut"/>
+<parameter id="InspectImage"/>
+<parameter id="Lines"/>
+<parameter id="RegionAllWhite"/>
+<parameter id="RegionMidDie"/>
+<parameter id="RegionVarAllSliver"/>
+<parameter id="RegionVarMidSliver"/>
+<parameter id="RegionWhite"/>
+<parameter id="hIsSliver"/>
+<parameter id="hIsStepMode"/>
+<parameter id="hMaxGrayDefectSliver"/>
+<parameter id="hMinAreaDefectSliver"/>
+<parameter id="hMinGrayDefectSliver"/>
+<parameter id="hROIInspectSliver"/>
+<parameter id="hRegionDefectQuadrantSliver"/>
+<parameter id="hRegionDefectSliver"/>
+<parameter id="hSmallLengthDefectSliver"/>
+</parameters>
+</docu>
+</procedure>
+</hdevelop>

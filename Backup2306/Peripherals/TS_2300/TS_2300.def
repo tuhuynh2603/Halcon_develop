@@ -1,0 +1,33 @@
+; IDL2300.def : Declares the module parameters for the DLL.
+
+LIBRARY      "IDL2300"
+
+EXPORTS
+    ; Explicit exports can go here
+	InitSensorDLL;
+	FreeSensorDLL;
+	OpenInstance;
+	GetAllParameters;
+	GetTransmittedDataInfo;
+	ProcessInstance;
+	ProcessInstancePoll;
+	SetMasterValue;
+	GetMasterValue;
+	Set_Samplerate;
+	Get_Samplerate;
+	Set_MeasureMode;
+	Get_MeasureMode;
+	Set_MeasurePeak;
+	Get_MeasurePeak;
+	Set_LaserPower;
+	Get_LaserPower;
+	Set_TriggerMode;
+	Get_TriggerMode;
+	Set_Averaging;
+	Get_Averaging;
+	Clear_Buffer;
+	ProcessDataAvail;
+	DataAvailEvent;
+	ReadBlockData; 
+
+
